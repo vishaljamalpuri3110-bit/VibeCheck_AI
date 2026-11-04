@@ -1,0 +1,20 @@
+# --- Java / Spring Boot ---
+backend/target/
+backend/.mvn/
+backend/.settings/
+backend/.classpath
+backend/.project
+backend/bin/
+*.class
+
+# --- Angular / Node ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# --- IDEs & OS ---
+.vscode/
+.idea/
+*.log
+.DS_Store
+*.env
