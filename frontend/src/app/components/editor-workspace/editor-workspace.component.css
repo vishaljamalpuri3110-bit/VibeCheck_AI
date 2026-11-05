@@ -931,3 +931,113 @@ textarea:focus-visible {
     font-size: 9px;
   }
 }
+
+/* Undo and redo controls */
+.history-button {
+  padding: 6px 9px;
+  border: 1px solid #e8e4de;
+  border-radius: 7px;
+}
+
+.history-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Outdated review notice */
+.review-outdated {
+  margin-top: 12px;
+  padding: 13px 16px;
+  border: 1px solid #ead8c7;
+  border-radius: 10px;
+  background: #fcf7f1;
+  color: #805b3e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.review-outdated strong {
+  display: block;
+  font-weight: 600;
+}
+
+/* Correction preview */
+.correction-preview {
+  margin-top: 16px;
+  padding: 15px;
+  border: 1px solid #e7e2db;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.preview-version {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.original-version {
+  background: #f8f5f2;
+  border: 1px solid #eee7e0;
+}
+
+.improved-version {
+  background: #f2f7f3;
+  border: 1px solid #dce9df;
+}
+
+.preview-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #77716a;
+}
+
+.preview-version p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: #292929;
+  overflow-wrap: anywhere;
+}
+
+.preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.accept-correction-button,
+.cancel-correction-button {
+  padding: 9px 13px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.accept-correction-button {
+  background: #a9664d;
+  border: 1px solid #a9664d;
+  color: #fff;
+}
+
+.cancel-correction-button {
+  background: #fff;
+  border: 1px solid #e5dfd8;
+  color: #49433e;
+}
+
+.correction-error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #fff5f3;
+  color: #a34437;
+  font-size: 12px;
+  line-height: 1.5;
+}

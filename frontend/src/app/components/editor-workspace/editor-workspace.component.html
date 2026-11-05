@@ -29,12 +29,14 @@
     <div class="document-card">
 
       <div class="document-toolbar">
+
         <div class="document-label">
           <span class="document-icon">✎</span>
           <span>Untitled draft</span>
         </div>
 
         <div class="document-actions">
+
           <span class="word-count">
             {{ wordCount() }} words
           </span>
@@ -47,8 +49,38 @@
           >
             Clear draft
           </button>
+
+          <button
+            class="text-button history-button"
+            type="button"
+            [disabled]="!canUndo()"
+            (click)="undo()"
+            title="Undo last accepted correction"
+          >
+            ↶ Undo
+          </button>
+
+          <button
+            class="text-button history-button"
+            type="button"
+            [disabled]="!canRedo()"
+            (click)="redo()"
+            title="Redo last undone correction"
+          >
+            ↷ Redo
+          </button>
+
         </div>
+
       </div>
+
+      @if (reviewOutdated() && result()) {
+        <div class="review-outdated">
+          <span>ⓘ</span>
+          Your draft has changed since this review.
+          <strong>Run compliance again before publishing.</strong>
+        </div>
+      }
 
       <textarea
         class="editor"
@@ -62,7 +94,10 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
       ></textarea>
 
       <div class="document-footer">
-        <span class="writing-hint">Your draft is ready for review</span>
+
+        <span class="writing-hint">
+          Your draft is ready for review
+        </span>
 
         <button
           class="scan-button"
@@ -70,6 +105,7 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
           [disabled]="!draft().trim() || scanning()"
           (click)="scan()"
         >
+
           @if (scanning()) {
             <span class="spinner"></span>
             Checking draft
@@ -77,64 +113,13 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
             Check compliance
             <span aria-hidden="true">→</span>
           }
+
         </button>
+
       </div>
+
     </div>
 
-    @if (result()?.piiDetected) {
-      <div class="privacy-note">
-        <span>🔒</span>
-        Personal information was detected and masked before analysis.
-      </div>
-    }
-
-    <p class="editor-footnote">
-      Review your claims before publishing. A compliance check is a guide,
-      not a substitute for final human approval.
-    </p>
-  </section>
-
-
-  <!-- Results -->
-  <aside class="results-panel">
-
-    <header class="results-heading">
-      <div>
-        <span class="eyebrow">REVIEW</span>
-        <h2>Compliance overview</h2>
-      </div>
-
-      @if (result()) {
-        <span class="review-id">
-          Review #{{ result()!.draftReviewLogId }}
-        </span>
-      }
-    </header>
-
-
-    <!-- Initial state -->
-    @if (!result() && !scanning() && !scanError()) {
-      <div class="empty-state">
-        <div class="empty-icon">⌕</div>
-        <h3>Nothing to review yet</h3>
-        <p>
-          Your compliance results will appear here after you check your draft.
-        </p>
-      </div>
-    }
-
-
-    <!-- Loading -->
-    @if (scanning()) {
-      <div class="loading-state">
-        <span class="spinner spinner-dark"></span>
-        <h3>Reviewing your content</h3>
-        <p>Checking brand rules and verifying claims.</p>
-      </div>
-    }
-
-
-    <!-- Error -->
     @if (scanError() && !scanning()) {
       <div class="error-state">
         <span class="error-icon">!</span>
@@ -148,9 +133,73 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
       </div>
     }
 
+    @if (result()?.piiDetected) {
+      <div class="privacy-note">
+        <span>🔒</span>
+        Personal information was detected and masked before analysis.
+      </div>
+    }
+
+    <p class="editor-footnote">
+      Review your claims before publishing. A compliance check is a guide,
+      not a substitute for final human approval.
+    </p>
+
+  </section>
+
+
+  <!-- Results -->
+  <aside class="results-panel">
+
+    <header class="results-heading">
+
+      <div>
+        <span class="eyebrow">REVIEW</span>
+        <h2>Compliance overview</h2>
+      </div>
+
+      @if (result()) {
+        <span class="review-id">
+          Review #{{ result()!.draftReviewLogId }}
+        </span>
+      }
+
+    </header>
+
+
+    <!-- Initial state -->
+    @if (!result() && !scanning() && !scanError()) {
+
+      <div class="empty-state">
+        <div class="empty-icon">⌕</div>
+
+        <h3>Nothing to review yet</h3>
+
+        <p>
+          Your compliance results will appear here after you check your draft.
+        </p>
+      </div>
+
+    }
+
+
+    <!-- Loading -->
+    @if (scanning()) {
+
+      <div class="loading-state">
+        <span class="spinner spinner-dark"></span>
+
+        <h3>Reviewing your content</h3>
+
+        <p>Checking brand rules and verifying claims.</p>
+      </div>
+
+    }
+
 
     <!-- Results -->
     @if (result() && !scanning()) {
+
       <div class="results-content">
 
         <!-- Overall status -->
@@ -158,6 +207,7 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
           class="result-summary"
           [class]="'result-summary ' + result()!.overallState.toLowerCase()"
         >
+
           <div class="summary-symbol">
             {{ overallIcon() }}
           </div>
@@ -166,11 +216,13 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
             <span class="summary-caption">Overall assessment</span>
             <strong>{{ stateLabel(result()!.overallState) }}</strong>
           </div>
+
         </div>
 
 
         <!-- Counts -->
         <div class="status-counts">
+
           <div class="count-item">
             <span class="count-number supported-text">
               {{ result()!.supportedCount }}
@@ -191,29 +243,36 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
             </span>
             <span class="count-label">Unverified</span>
           </div>
+
         </div>
 
 
         <!-- Local rule violations -->
         @if (result()!.localViolations.length > 0) {
+
           <section class="result-section">
+
             <div class="section-heading">
               <div>
                 <h3>Brand rule alerts</h3>
                 <p>Issues detected by local compliance rules</p>
               </div>
+
               <span class="section-count">
                 {{ result()!.localViolations.length }}
               </span>
             </div>
 
             @for (violation of result()!.localViolations; track violation.ruleId) {
+
               <article
                 class="violation-item"
                 [class]="'violation-item ' + violation.severity.toLowerCase()"
               >
+
                 <div class="violation-top">
                   <strong>{{ violation.ruleName }}</strong>
+
                   <span class="severity-label">
                     {{ violation.severity }}
                   </span>
@@ -228,36 +287,46 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
                     {{ violation.description }}
                   </p>
                 }
+
               </article>
+
             }
+
           </section>
+
         }
 
 
         <!-- AI verification -->
         @if (result()!.verificationItems.length > 0) {
+
           <section class="result-section">
+
             <div class="section-heading">
               <div>
                 <h3>Claim verification</h3>
                 <p>Evidence checks for statements in your draft</p>
               </div>
+
               <span class="section-count">
                 {{ result()!.verificationItems.length }}
               </span>
             </div>
 
             @for (item of result()!.verificationItems; track $index) {
+
               <article
                 class="claim-item"
                 [class]="'claim-item ' + item.state.toLowerCase()"
               >
+
                 <button
                   type="button"
                   class="claim-toggle"
                   [attr.aria-expanded]="isExpanded($index)"
                   (click)="toggleDetails($index)"
                 >
+
                   <span class="claim-status-icon">
                     {{ stateIcon(item.state) }}
                   </span>
@@ -266,80 +335,223 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
                     <span class="claim-state">
                       {{ stateLabel(item.state) }}
                     </span>
-                    <span class="claim-text">{{ item.claim }}</span>
+
+                    <span class="claim-text">
+                      {{ item.claim }}
+                    </span>
                   </span>
 
                   <span class="claim-chevron">
                     {{ isExpanded($index) ? '−' : '+' }}
                   </span>
+
                 </button>
 
+
                 @if (isExpanded($index)) {
+
                   <div class="claim-details">
 
+                    <!-- Confidence -->
                     <div class="confidence-line">
+
                       <span>Confidence</span>
+
                       <strong>
-                        {{ (item.confidenceScore * 100).toFixed(0) }}%
+                        {{ (item.confidenceScore * 100) | number:'1.0-0' }}%
                       </strong>
+
                     </div>
 
+
+                    <!-- Rationale -->
                     @if (item.rationale) {
-                      <p class="rationale">{{ item.rationale }}</p>
+                      <p class="rationale">
+                        {{ item.rationale }}
+                      </p>
                     }
 
+
+                    <!-- Evidence -->
                     @if ((item.evidenceIds?.length ?? 0) > 0) {
+
                       <div class="evidence-block">
-                        <span class="detail-label">SOURCE EVIDENCE</span>
+
+                        <span class="detail-label">
+                          SOURCE EVIDENCE
+                        </span>
 
                         @for (evidence of item.evidenceIds; track evidence.chunkId) {
+
                           <div class="evidence-item">
+
                             <span class="evidence-name">
                               {{ evidence.documentName }}
                             </span>
+
                             <span class="evidence-page">
                               Page {{ evidence.pageNumber }}
                             </span>
+
+                            <p>{{ evidence.excerpt }}</p>
+
                           </div>
+
                         }
+
                       </div>
+
                     }
 
-                    @if (item.suggestedCorrection) {
+
+                    <!-- Suggested correction -->
+                    @if (item.suggestedCorrection?.trim()) {
+
                       <div class="correction-block">
-                        <span class="detail-label">SUGGESTED EDIT</span>
+
+                        <span class="detail-label">
+                          SUGGESTED EDIT
+                        </span>
+
                         <p>{{ item.suggestedCorrection }}</p>
 
                         <button
                           type="button"
                           class="apply-button"
-                          (click)="applyCorrection(item)"
+                          (click)="previewCorrection(item)"
                         >
-                          Apply to draft
+                          Preview correction
                           <span aria-hidden="true">↗</span>
                         </button>
+
+
+                        <!-- Preview appears only for the selected finding -->
+                        @if (pendingCorrection()?.original === item.claim) {
+
+                          <div class="correction-preview">
+
+                            <span class="detail-label">
+                              REVIEW YOUR CHANGES
+                            </span>
+
+                            <div class="preview-version original-version">
+
+                              <span class="preview-label">
+                                Original wording
+                              </span>
+
+                              <p>
+                                {{ pendingCorrection()!.original }}
+                              </p>
+
+                            </div>
+
+                            <div class="preview-version improved-version">
+
+                              <span class="preview-label">
+                                Suggested wording
+                              </span>
+
+                              <p>
+                                {{ pendingCorrection()!.replacement }}
+                              </p>
+
+                            </div>
+
+                            <div class="preview-actions">
+
+  @if (pendingCorrection()?.validationState === 'SAFE') {
+
+    <button
+      type="button"
+      class="accept-correction-button"
+      (click)="acceptCorrection()"
+    >
+      Accept correction
+    </button>
+
+  } @else {
+
+    <p class="correction-warning">
+      <strong>Manual review required</strong>
+      This suggestion has not passed independent validation.
+    </p>
+
+  }
+
+  <button
+    type="button"
+    class="cancel-correction-button"
+    (click)="cancelCorrection()"
+  >
+    Cancel
+  </button>
+
+</div>
+@if (pendingCorrection()?.validationState === 'NEEDS_REVIEW') {
+  <p class="correction-warning">
+    This correction needs manual review before it can be used.
+  </p>
+}
+
+                          </div>
+
+                        }
+
                       </div>
+
+                    } @else {
+
+                      <div class="correction-block">
+                        <span class="detail-label">SUGGESTED EDIT</span>
+                        <p>No automatic correction was provided for this finding.</p>
+                      </div>
+
+                    }
+
+
+                    <!-- Correction error -->
+                    @if (correctionError()) {
+
+                      <p class="correction-error" role="alert">
+                        {{ correctionError() }}
+                      </p>
+
                     }
 
                   </div>
+
                 }
+
               </article>
+
             }
+
           </section>
+
         }
 
+
+        <!-- No individual findings -->
         @if (
           result()!.localViolations.length === 0 &&
           result()!.verificationItems.length === 0
         ) {
+
           <div class="empty-results">
             <h3>No claim details returned</h3>
-            <p>The review completed, but there are no individual findings to display.</p>
+
+            <p>
+              The review completed, but there are no individual findings to display.
+            </p>
           </div>
+
         }
 
       </div>
+
     }
+
   </aside>
 
 </main>

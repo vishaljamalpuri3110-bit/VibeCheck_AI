@@ -21,8 +21,8 @@ public class OpenRouterConfig {
     @Value("${openrouter.primary.model}")
     private String primaryModel;
 
-    @Value("${openrouter.fallback.model}")
-    private String fallbackModel;
+    @Value("${openrouter.fallback.model:}")
+private String fallbackModel;
 
     @Bean
     public RestTemplate restTemplate() {

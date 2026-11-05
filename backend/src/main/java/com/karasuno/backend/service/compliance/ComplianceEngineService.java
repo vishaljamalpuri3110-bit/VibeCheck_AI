@@ -1,19 +1,26 @@
+
 package com.karasuno.backend.service.compliance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.karasuno.backend.dto.ComplianceScanRequest;
 import com.karasuno.backend.dto.ComplianceScanResponse;
 import com.karasuno.backend.dto.VerificationItem;
+
 import com.karasuno.backend.entity.ComplianceRule;
 import com.karasuno.backend.entity.DocumentChunk;
 import com.karasuno.backend.entity.DraftReviewLog;
+
 import com.karasuno.backend.repository.ComplianceRuleRepository;
 import com.karasuno.backend.repository.DocumentChunkRepository;
 import com.karasuno.backend.repository.DraftReviewLogRepository;
+
 import com.karasuno.backend.service.privacy.DataPrivacyShieldService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,23 +30,16 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Module 3 — Hybrid Compliance Engine.
- *
- * <p>Full compliance pipeline for each draft submission:
- * <ol>
- *   <li><b>PII Masking</b> — DataPrivacyShieldService redacts PII locally.</li>
- *   <li><b>Local Rule Checks</b> — Deterministic banned keyword and regex scans.</li>
- *   <li><b>AI Analysis</b> — OpenRouter (Claude 3.5 Sonnet / Llama 3 fallback) for semantic verification.</li>
- *   <li><b>Response Parsing</b> — Strict JSON schema validation → tri-state VerificationItems.</li>
- *   <li><b>Persistence</b> — Full DraftReviewLog saved to MySQL.</li>
- * </ol>
- */
 @Service
 public class ComplianceEngineService {
 
-    private static final Logger log = LoggerFactory.getLogger(ComplianceEngineService.class);
-    private static final int MAX_REFERENCE_CHUNKS = 20;
+    private static final Logger log =
+            LoggerFactory.getLogger(ComplianceEngineService.class);
+
+    private static final int MAX_REFERENCE_CHUNKS = 8;
+
+    private static final String BRAND_HANDBOOK_TYPE =
+            "BRAND_HANDBOOK";
 
     private final DataPrivacyShieldService privacyShield;
     private final ComplianceRuleRepository complianceRuleRepository;
@@ -48,12 +48,14 @@ public class ComplianceEngineService {
     private final OpenRouterClient openRouterClient;
     private final ObjectMapper objectMapper;
 
-    public ComplianceEngineService(DataPrivacyShieldService privacyShield,
-                                   ComplianceRuleRepository complianceRuleRepository,
-                                   DocumentChunkRepository documentChunkRepository,
-                                   DraftReviewLogRepository draftReviewLogRepository,
-                                   OpenRouterClient openRouterClient,
-                                   ObjectMapper objectMapper) {
+    public ComplianceEngineService(
+            DataPrivacyShieldService privacyShield,
+            ComplianceRuleRepository complianceRuleRepository,
+            DocumentChunkRepository documentChunkRepository,
+            DraftReviewLogRepository draftReviewLogRepository,
+            OpenRouterClient openRouterClient,
+            ObjectMapper objectMapper) {
+
         this.privacyShield = privacyShield;
         this.complianceRuleRepository = complianceRuleRepository;
         this.documentChunkRepository = documentChunkRepository;
@@ -62,62 +64,101 @@ public class ComplianceEngineService {
         this.objectMapper = objectMapper;
     }
 
-    /**
-     * Executes the full compliance pipeline on a submitted draft.
-     *
-     * @param request              scan request containing draft text
-     * @param submittedByUserId    authenticated user's ID
-     * @param submittedByUsername  authenticated user's username
-     * @return fully populated ComplianceScanResponse
-     */
     @Transactional
-    public ComplianceScanResponse scan(ComplianceScanRequest request,
-                                       Long submittedByUserId,
-                                       String submittedByUsername) {
+    public ComplianceScanResponse scan(
+            ComplianceScanRequest request,
+            Long submittedByUserId,
+            String submittedByUsername) {
+
         String originalText = request.getDraftText();
-        log.info("Compliance scan started — user='{}', textLen={}", submittedByUsername, originalText.length());
 
-        // ── STEP 1: PII Masking ──────────────────────────────────────────────
-        DataPrivacyShieldService.MaskingResult maskResult = privacyShield.maskPii(originalText);
-        String maskedText = maskResult.maskedText();
-
-        // ── STEP 2: Local Deterministic Rule Checks ──────────────────────────
-        List<ComplianceScanResponse.LocalViolation> localViolations = runLocalRules(maskedText);
-        log.info("Local rules: {} violation(s)", localViolations.size());
-
-        // ── STEP 3: Retrieve reference chunks for AI context ─────────────────
-        List<DocumentChunk> refChunks = documentChunkRepository.findAll()
-                .stream().limit(MAX_REFERENCE_CHUNKS).toList();
-        log.info("Reference chunks available: {}", refChunks.size());
-
-        // ── STEP 4: AI Semantic Analysis ─────────────────────────────────────
-        List<VerificationItem> verificationItems = new ArrayList<>();
-        String rawAiJson = null;
-
-        try {
-            rawAiJson = openRouterClient.analyzeCompliance(maskedText, refChunks);
-            verificationItems = parseAiResponse(rawAiJson);
-            log.info("AI analysis returned {} verification item(s)", verificationItems.size());
-        } catch (Exception e) {
-            log.error("AI analysis failed: {}", e.getMessage());
-            // Graceful degradation: single UNVERIFIED item with error message
-            VerificationItem fallback = new VerificationItem();
-            fallback.setClaim(originalText.substring(0, Math.min(200, originalText.length())));
-            fallback.setState("UNVERIFIED");
-            fallback.setConfidenceScore(0.0);
-            fallback.setRationale("AI analysis unavailable: " + e.getMessage());
-            fallback.setEvidenceIds(List.of());
-            verificationItems.add(fallback);
+        if (originalText == null || originalText.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Draft text cannot be empty."
+            );
         }
 
-        // ── STEP 5: Aggregate counts and determine overall state ─────────────
-        int supported    = count(verificationItems, "SUPPORTED");
-        int contradicted = count(verificationItems, "CONTRADICTED");
-        int unverified   = count(verificationItems, "UNVERIFIED");
-        DraftReviewLog.VerificationState overallState =
-                resolveOverallState(supported, contradicted, unverified, localViolations.size());
+        log.info(
+                "Compliance scan started — user='{}', textLen={}",
+                submittedByUsername,
+                originalText.length()
+        );
 
-        // ── STEP 6: Persist DraftReviewLog ───────────────────────────────────
+        // STEP 1: PII masking
+        DataPrivacyShieldService.MaskingResult maskResult =
+                privacyShield.maskPii(originalText);
+
+        String maskedText = maskResult.maskedText();
+
+        // STEP 2: Local deterministic rules
+        List<ComplianceScanResponse.LocalViolation> localViolations =
+                runLocalRules(maskedText);
+
+        log.info(
+                "Local rules: {} violation(s)",
+                localViolations.size()
+        );
+
+        // STEP 3: Retrieve only brand handbook references
+        List<DocumentChunk> refChunks = retrieveBrandReferences();
+
+        log.info(
+                "Brand handbook reference chunks available: {}",
+                refChunks.size()
+        );
+
+        // STEP 4: AI analysis
+        // Do not create fake UNVERIFIED findings when AI fails.
+        String rawAiJson;
+
+        try {
+            rawAiJson = openRouterClient.analyzeCompliance(
+                    maskedText,
+                    refChunks
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                    "AI analysis failed. Scan cannot be completed: {}",
+                    e.getMessage()
+            );
+
+            throw new IllegalStateException(
+                    "Compliance analysis is temporarily unavailable. "
+                            + "Please try again.",
+                    e
+            );
+        }
+
+List<VerificationItem> verificationItems =
+        parseAiResponse(rawAiJson);
+
+log.info(
+        "AI analysis returned {} verification item(s)",
+        verificationItems.size()
+);
+
+// STEP 4.5: Independently validate AI-generated corrections.
+openRouterClient.validateCorrections(
+        verificationItems,
+        refChunks
+);
+
+        // STEP 5: Aggregate counts
+        int supported = count(verificationItems, "SUPPORTED");
+        int contradicted = count(verificationItems, "CONTRADICTED");
+        int unverified = count(verificationItems, "UNVERIFIED");
+
+        DraftReviewLog.VerificationState overallState =
+                resolveOverallState(
+                        supported,
+                        contradicted,
+                        unverified,
+                        localViolations.size()
+                );
+
+        // STEP 6: Persist completed review
         DraftReviewLog reviewLog = DraftReviewLog.builder()
                 .submittedByUserId(submittedByUserId)
                 .submittedByUsername(submittedByUsername)
@@ -129,12 +170,18 @@ public class ComplianceEngineService {
                 .contradictedCount(contradicted)
                 .unverifiedCount(unverified)
                 .localViolationCount(localViolations.size())
-                .reviewStatus(DraftReviewLog.ReviewStatus.PENDING_REVIEW)
+                .reviewStatus(
+                        DraftReviewLog.ReviewStatus.PENDING_REVIEW
+                )
                 .build();
-        DraftReviewLog saved = draftReviewLogRepository.save(reviewLog);
 
-        // ── STEP 7: Build response ───────────────────────────────────────────
-        ComplianceScanResponse response = new ComplianceScanResponse();
+        DraftReviewLog saved =
+                draftReviewLogRepository.save(reviewLog);
+
+        // STEP 7: Build response
+        ComplianceScanResponse response =
+                new ComplianceScanResponse();
+
         response.setDraftReviewLogId(saved.getId());
         response.setOverallState(overallState);
         response.setVerificationItems(verificationItems);
@@ -146,96 +193,268 @@ public class ComplianceEngineService {
         response.setPiiDetected(maskResult.piiDetected());
         response.setScannedAt(LocalDateTime.now());
 
-        log.info("Scan complete — logId={}, state={}, S={}, C={}, U={}",
-                saved.getId(), overallState, supported, contradicted, unverified);
+        log.info(
+                "Scan complete — logId={}, state={}, S={}, C={}, U={}",
+                saved.getId(),
+                overallState,
+                supported,
+                contradicted,
+                unverified
+        );
+
         return response;
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
+    /**
+     * Retrieves brand handbook chunks in document/page order.
+     */
+    private List<DocumentChunk> retrieveBrandReferences() {
 
-    /** Runs all active local compliance rules against the text. */
-    private List<ComplianceScanResponse.LocalViolation> runLocalRules(String text) {
-        List<ComplianceScanResponse.LocalViolation> violations = new ArrayList<>();
-        List<ComplianceRule> rules = complianceRuleRepository.findByActiveTrue();
+        List<DocumentChunk> chunks =
+                documentChunkRepository
+                        .findByDocumentTypeOrderByDocumentNameAscPageNumberAsc(
+                                BRAND_HANDBOOK_TYPE
+                        );
 
-        for (ComplianceRule rule : rules) {
-            String matched = findMatch(text, rule);
-            if (matched != null) {
-                ComplianceScanResponse.LocalViolation v = new ComplianceScanResponse.LocalViolation();
-                v.setRuleId(rule.getId());
-                v.setRuleName(rule.getRuleName());
-                v.setMatchedText(matched);
-                v.setSeverity(rule.getSeverity().name());
-                v.setDescription(rule.getDescription());
-                violations.add(v);
-            }
+        if (chunks == null || chunks.isEmpty()) {
+
+            log.warn(
+                    "No documents found with documentType={}",
+                    BRAND_HANDBOOK_TYPE
+            );
+
+            return List.of();
         }
-        return violations;
-    }
 
-    /** Applies a single rule against text, returning the matched string or null. */
-    private String findMatch(String text, ComplianceRule rule) {
-        try {
-            if (rule.getRuleType() == ComplianceRule.RuleType.BANNED_KEYWORD) {
-                String lower = text.toLowerCase();
-                String keyword = rule.getPattern().toLowerCase();
-                int idx = lower.indexOf(keyword);
-                if (idx >= 0) {
-                    return text.substring(idx, Math.min(idx + keyword.length() + 20, text.length()));
-                }
-            } else {
-                Matcher m = Pattern.compile(rule.getPattern(), Pattern.CASE_INSENSITIVE).matcher(text);
-                if (m.find()) return m.group();
-            }
-        } catch (Exception e) {
-            log.warn("Error evaluating rule '{}': {}", rule.getRuleName(), e.getMessage());
+        if (chunks.size() > MAX_REFERENCE_CHUNKS) {
+
+            log.warn(
+                    "Brand reference contains {} chunks. "
+                            + "Using first {} chunks.",
+                    chunks.size(),
+                    MAX_REFERENCE_CHUNKS
+            );
+
+            return new ArrayList<>(
+                    chunks.subList(0, MAX_REFERENCE_CHUNKS)
+            );
         }
-        return null;
-    }
 
-    /** Parses the raw AI JSON response into VerificationItem list with schema validation. */
-    private List<VerificationItem> parseAiResponse(String jsonResponse) {
-        List<VerificationItem> items = new ArrayList<>();
-        if (jsonResponse == null || jsonResponse.isBlank()) return items;
-
-        try {
-            JsonNode root = objectMapper.readTree(jsonResponse);
-            JsonNode arr = root.path("verificationItems");
-            if (!arr.isArray()) return items;
-
-            for (JsonNode node : arr) {
-                VerificationItem item = objectMapper.treeToValue(node, VerificationItem.class);
-                // Validate and clamp confidence score
-                if (item.getConfidenceScore() == null) item.setConfidenceScore(0.5);
-                item.setConfidenceScore(Math.max(0.0, Math.min(1.0, item.getConfidenceScore())));
-                // Enforce valid state
-                if (!List.of("SUPPORTED", "CONTRADICTED", "UNVERIFIED").contains(item.getState())) {
-                    item.setState("UNVERIFIED");
-                }
-                if (item.getEvidenceIds() == null) item.setEvidenceIds(List.of());
-                items.add(item);
-            }
-        } catch (Exception e) {
-            log.error("Failed to parse AI JSON response: {}", e.getMessage());
-        }
-        return items;
-    }
-
-    /** Counts items matching the given state string. */
-    private int count(List<VerificationItem> items, String state) {
-        return (int) items.stream().filter(v -> state.equals(v.getState())).count();
+        return chunks;
     }
 
     /**
-     * Determines the overall draft state.
-     * Any CONTRADICTED claim or local violation → CONTRADICTED.
-     * All SUPPORTED and no UNVERIFIED → SUPPORTED.
-     * Otherwise → UNVERIFIED.
+     * Runs all active local compliance rules.
+     */
+    private List<ComplianceScanResponse.LocalViolation> runLocalRules(
+            String text) {
+
+        List<ComplianceScanResponse.LocalViolation> violations =
+                new ArrayList<>();
+
+        List<ComplianceRule> rules =
+                complianceRuleRepository.findByActiveTrue();
+
+        for (ComplianceRule rule : rules) {
+
+            String matched = findMatch(text, rule);
+
+            if (matched != null) {
+
+                ComplianceScanResponse.LocalViolation violation =
+                        new ComplianceScanResponse.LocalViolation();
+
+                violation.setRuleId(rule.getId());
+                violation.setRuleName(rule.getRuleName());
+                violation.setMatchedText(matched);
+                violation.setSeverity(rule.getSeverity().name());
+                violation.setDescription(rule.getDescription());
+
+                violations.add(violation);
+            }
+        }
+
+        return violations;
+    }
+
+    /**
+     * Applies a single local rule.
+     */
+    private String findMatch(String text, ComplianceRule rule) {
+
+        try {
+
+            if (rule.getRuleType()
+                    == ComplianceRule.RuleType.BANNED_KEYWORD) {
+
+                String lower = text.toLowerCase();
+                String keyword = rule.getPattern().toLowerCase();
+
+                int index = lower.indexOf(keyword);
+
+                if (index >= 0) {
+
+                    return text.substring(
+                            index,
+                            Math.min(
+                                    index + keyword.length() + 20,
+                                    text.length()
+                            )
+                    );
+                }
+
+            } else {
+
+                Matcher matcher = Pattern.compile(
+                        rule.getPattern(),
+                        Pattern.CASE_INSENSITIVE
+                ).matcher(text);
+
+                if (matcher.find()) {
+                    return matcher.group();
+                }
+            }
+
+        } catch (Exception e) {
+
+            log.warn(
+                    "Error evaluating rule '{}': {}",
+                    rule.getRuleName(),
+                    e.getMessage()
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Parses and validates AI JSON.
+     */
+    private List<VerificationItem> parseAiResponse(
+            String jsonResponse) {
+
+        if (jsonResponse == null || jsonResponse.isBlank()) {
+
+            throw new IllegalStateException(
+                    "AI returned an empty compliance response."
+            );
+        }
+
+        try {
+
+            JsonNode root =
+                    objectMapper.readTree(jsonResponse);
+
+            JsonNode array =
+                    root.path("verificationItems");
+
+            if (!array.isArray()) {
+
+                throw new IllegalStateException(
+                        "AI response contains no verification items."
+                );
+            }
+
+            List<VerificationItem> items =
+                    new ArrayList<>();
+
+            for (JsonNode node : array) {
+
+                VerificationItem item =
+                        objectMapper.treeToValue(
+                                node,
+                                VerificationItem.class
+                        );
+
+                if (item.getClaim() == null
+                        || item.getClaim().isBlank()) {
+
+                    throw new IllegalStateException(
+                            "AI returned a verification item without a claim."
+                    );
+                }
+
+                if (item.getConfidenceScore() == null) {
+                    item.setConfidenceScore(0.5);
+                }
+
+                item.setConfidenceScore(
+                        Math.max(
+                                0.0,
+                                Math.min(
+                                        1.0,
+                                        item.getConfidenceScore()
+                                )
+                        )
+                );
+
+                String state = item.getState();
+
+                if (state == null || !List.of(
+                        "SUPPORTED",
+                        "CONTRADICTED",
+                        "UNVERIFIED"
+                ).contains(state.toUpperCase())) {
+
+                    throw new IllegalStateException(
+                            "AI returned an invalid verification state."
+                    );
+                }
+
+                item.setState(state.toUpperCase());
+
+                if (item.getEvidenceIds() == null) {
+                    item.setEvidenceIds(List.of());
+                }
+
+                items.add(item);
+            }
+
+            return items;
+
+        } catch (IllegalStateException e) {
+            throw e;
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Failed to parse AI compliance JSON: {}",
+                    e.getMessage()
+            );
+
+            throw new IllegalStateException(
+                    "Could not parse AI compliance response.",
+                    e
+            );
+        }
+    }
+
+    private int count(
+            List<VerificationItem> items,
+            String state) {
+
+        return (int) items.stream()
+                .filter(item -> state.equals(item.getState()))
+                .count();
+    }
+
+    /**
+     * Resolves the overall compliance state.
      */
     private DraftReviewLog.VerificationState resolveOverallState(
-            int supported, int contradicted, int unverified, int localViolations) {
-        if (contradicted > 0 || localViolations > 0) return DraftReviewLog.VerificationState.CONTRADICTED;
-        if (supported > 0 && unverified == 0)       return DraftReviewLog.VerificationState.SUPPORTED;
-        return DraftReviewLog.VerificationState.UNVERIFIED;
+            int supported,
+            int contradicted,
+            int unverified,
+            int localViolations) {
+
+        if (contradicted > 0 || localViolations > 0) {
+    return DraftReviewLog.VerificationState.CONTRADICTED;
+}
+
+if (unverified > 0) {
+    return DraftReviewLog.VerificationState.UNVERIFIED;
+}
+
+return DraftReviewLog.VerificationState.SUPPORTED;
     }
 }

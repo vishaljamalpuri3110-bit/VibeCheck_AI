@@ -59,6 +59,12 @@ export interface VerificationItem {
   rationale: string;
   suggestedCorrection?: string;
   evidenceIds: EvidenceReference[];
+  correctionValidationState:
+  | 'SAFE'
+  | 'NEEDS_REVIEW'
+  | 'NOT_APPLICABLE';
+
+correctionValidationRationale?: string;
 }
 
 export interface LocalViolation {

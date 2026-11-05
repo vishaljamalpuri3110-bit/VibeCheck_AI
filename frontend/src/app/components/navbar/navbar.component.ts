@@ -14,7 +14,7 @@ import { AuthService } from '../../services/auth.service';
         <span class="brand-name">
           VibeCheck <span class="brand-ai">AI</span>
         </span>
-        <span class="brand-team">Team Karasuno</span>
+        
       </div>
 
       <div class="nav-links">

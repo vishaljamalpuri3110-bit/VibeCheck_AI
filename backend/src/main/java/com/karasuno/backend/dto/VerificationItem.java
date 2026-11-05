@@ -30,6 +30,11 @@ public class VerificationItem {
     /** Short explanation of why this state was assigned */
     private String rationale;
 
+    /** Independent validation result for the suggested correction */
+private String correctionValidationState;
+
+/** Explanation of why the correction passed or needs review */
+private String correctionValidationRationale;
     /** Evidence citation record pointing to a specific document chunk. */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)

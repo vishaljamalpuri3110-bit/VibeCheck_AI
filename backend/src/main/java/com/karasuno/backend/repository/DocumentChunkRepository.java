@@ -6,13 +6,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
-
+  import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 /** JPA repository for DocumentChunk — supports search and retrieval for compliance matching. */
 @Repository
 public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, Long> {
 
     /** All chunks for a document, ordered by page then chunk index */
     List<DocumentChunk> findByDocumentNameOrderByPageNumberAscChunkIndexAsc(String documentName);
+
+    
 
     /** All chunks for a specific page of a document */
     List<DocumentChunk> findByDocumentNameAndPageNumber(String documentName, Integer pageNumber);
@@ -29,7 +32,11 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, Lo
     long countByDocumentName(String documentName);
 
     /** Delete all chunks for a document (supports re-ingestion) */
-    void deleteByDocumentName(String documentName);
+  
+
+@Modifying
+@Transactional
+void deleteByDocumentName(String documentName);
 
     /** Chunks filtered by document type */
     List<DocumentChunk> findByDocumentTypeOrderByDocumentNameAscPageNumberAsc(String documentType);
