@@ -1,0 +1,232 @@
+
+<app-navbar />
+
+<main class="page">
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">ADMINISTRATION / KNOWLEDGE BASE</span>
+      <h1 class="page-title">Brand documents</h1>
+      <p class="page-desc">
+        Manage the official references used to evaluate brand compliance.
+      </p>
+    </div>
+
+    <div class="header-stat">
+      <span class="stat-number">{{ docs().length }}</span>
+      <span class="stat-label">Active documents</span>
+    </div>
+  </header>
+
+  <section class="workspace">
+
+    <!-- Upload section -->
+    <div class="panel upload-panel">
+      <div class="panel-heading">
+        <div>
+          <span class="section-kicker">ADD TO KNOWLEDGE BASE</span>
+          <h2>Upload a document</h2>
+          <p>Add a handbook or guideline for compliance checks.</p>
+        </div>
+        <span class="heading-icon">↑</span>
+      </div>
+
+      <div
+        class="dropzone"
+        [class.dragging]="dragging()"
+        [class.has-file]="file()"
+        (dragover)="$event.preventDefault(); dragging.set(true)"
+        (dragleave)="dragging.set(false)"
+        (drop)="onDrop($event)"
+      >
+        @if (!file()) {
+          <div class="drop-content">
+            <div class="upload-icon">
+              <span>↑</span>
+            </div>
+
+            <h3>Drop your PDF here</h3>
+            <p>or browse files from your device</p>
+
+            <label class="browse-button">
+              Browse files
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                (change)="onFileInput($event)"
+                hidden
+              />
+            </label>
+
+            <span class="file-hint">PDF files only</span>
+          </div>
+        } @else {
+          <div class="selected-file">
+            <div class="pdf-icon">PDF</div>
+
+            <div class="selected-file-info">
+              <strong>{{ file()!.name }}</strong>
+              <span>{{ fmtSize(file()!.size) }} · Ready to upload</span>
+            </div>
+
+            <button
+              type="button"
+              class="remove-file"
+              (click)="clearFile()"
+              aria-label="Remove selected file"
+              [disabled]="uploading()"
+            >
+              ×
+            </button>
+          </div>
+        }
+      </div>
+
+      <div class="field">
+        <label for="documentType">Document category</label>
+        <select id="documentType" [(ngModel)]="docType">
+          <option value="BRAND_HANDBOOK">Brand handbook</option>
+          <option value="STYLE_GUIDE">Style guide</option>
+          <option value="LEGAL_GUIDELINES">Legal guidelines</option>
+          <option value="GENERAL">General reference</option>
+        </select>
+      </div>
+
+      @if (uploading()) {
+        <div class="progress-section">
+          <div class="progress-heading">
+            <span>Processing document</span>
+            <strong>{{ progress() }}%</strong>
+          </div>
+
+          <div
+            class="progress-track"
+            role="progressbar"
+            [attr.aria-valuenow]="progress()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div
+              class="progress-fill"
+              [style.width.%]="progress()"
+            ></div>
+          </div>
+
+          <p>Uploading and preparing document references…</p>
+        </div>
+      }
+
+      @if (uploadResult(); as result) {
+        <div class="message success-message" role="status">
+          <span class="message-icon">✓</span>
+          <div>
+            <strong>Document processed successfully</strong>
+            <p>
+              {{ result.filename }} · {{ result.chunksCreated }} chunks created
+            </p>
+          </div>
+        </div>
+      }
+
+      @if (uploadErr()) {
+        <div class="message error-message" role="alert">
+          <span class="message-icon">!</span>
+          <span>{{ uploadErr() }}</span>
+        </div>
+      }
+
+      <button
+        type="button"
+        class="upload-button"
+        [disabled]="!file() || uploading()"
+        (click)="upload()"
+      >
+        @if (uploading()) {
+          <span class="button-spinner"></span>
+          Processing…
+        } @else {
+          Upload and ingest
+          <span>→</span>
+        }
+      </button>
+
+      <p class="upload-note">
+        Uploaded references are used by the compliance evaluation workflow.
+      </p>
+    </div>
+
+    <!-- Document library -->
+    <div class="panel library-panel">
+      <div class="library-heading">
+        <div>
+          <span class="section-kicker">YOUR REFERENCES</span>
+          <h2>Document library</h2>
+          <p>Official files currently available to the platform.</p>
+        </div>
+
+        <button
+          type="button"
+          class="refresh-button"
+          (click)="loadDocs()"
+          [disabled]="loading()"
+        >
+          <span>↻</span> Refresh
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="library-state">
+          <span class="loading-spinner"></span>
+          <p>Loading your documents…</p>
+        </div>
+      } @else if (loadError()) {
+        <div class="library-state">
+          <p>{{ loadError() }}</p>
+          <button type="button" class="retry-button" (click)="loadDocs()">
+            Try again
+          </button>
+        </div>
+      } @else if (docs().length === 0) {
+        <div class="library-state empty-state">
+          <div class="empty-icon">▤</div>
+          <h3>Your library is empty</h3>
+          <p>Upload your first PDF to start building the brand knowledge base.</p>
+        </div>
+      } @else {
+        <div class="document-list">
+          @for (doc of docs(); track doc.documentName) {
+            <article class="document-item">
+              <div class="document-file-icon">PDF</div>
+
+              <div class="document-details">
+                <strong class="document-name">{{ doc.documentName }}</strong>
+
+                <div class="document-meta">
+                  <span class="type-label">
+                    {{ getDocumentTypeLabel(doc.documentType) }}
+                  </span>
+                  <span class="meta-separator">·</span>
+                  <span>{{ doc.totalChunks }} chunks</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                class="delete-button"
+                title="Delete document"
+                aria-label="Delete document"
+                (click)="deleteDoc(doc.documentName)"
+              >
+                <span>×</span>
+              </button>
+            </article>
+          }
+        </div>
+
+        <div class="library-footer">
+          Showing {{ docs().length }} document(s)
+        </div>
+      }
+    </div>
+
+  </section>
+</main>

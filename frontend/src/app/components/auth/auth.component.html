@@ -1,0 +1,167 @@
+
+<main class="page">
+  <nav class="topbar">
+    <a class="brand" href="/">vibecheck<span>.</span></a>
+    <span class="team">TEAM KARASUNO</span>
+  </nav>
+
+  <section class="auth-layout">
+    <div class="intro">
+      <div class="eyebrow">BRAND GOVERNANCE, MADE SIMPLE</div>
+
+      <h1>
+        Good content.<br>
+        <em>Consistent identity.</em>
+      </h1>
+
+      <p class="intro-text">
+        A thoughtful workspace to create, review and protect
+        everything your brand stands for.
+      </p>
+
+      <div class="intro-bottom">
+        <span class="small-line"></span>
+        <span>One voice. Every touchpoint.</span>
+      </div>
+    </div>
+
+    <div class="auth-card">
+      <div class="form-heading">
+        <h2>{{ isRegister ? 'Create your account' : 'Welcome back' }}</h2>
+        <p>
+          {{ isRegister
+            ? 'Start creating with confidence.'
+            : 'Sign in to continue to your workspace.' }}
+        </p>
+      </div>
+
+      <div class="tabs">
+        <button type="button"
+          [class.active]="!isRegister"
+          (click)="isRegister = false; error = ''">
+          Sign in
+        </button>
+
+        <button type="button"
+          [class.active]="isRegister"
+          (click)="isRegister = true; error = ''">
+          Create account
+        </button>
+      </div>
+
+      <form *ngIf="!isRegister" (ngSubmit)="login()">
+        <label for="username">Username</label>
+        <input id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="loginData.username"
+          placeholder="Your username"
+          autocomplete="username"
+          required>
+
+        <label for="password">Password</label>
+        <input id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="loginData.password"
+          placeholder="Your password"
+          autocomplete="current-password"
+          required>
+
+        <p class="error" *ngIf="error">{{ error }}</p>
+
+        <button class="primary-btn" type="submit" [disabled]="loading">
+          {{ loading ? 'Signing in...' : 'Continue' }}
+          <span>→</span>
+        </button>
+      </form>
+
+      <form *ngIf="isRegister" (ngSubmit)="register()">
+        <label for="regUsername">Username</label>
+        <input id="regUsername"
+          name="regUsername"
+          [(ngModel)]="regData.username"
+          placeholder="Choose a username"
+          autocomplete="username"
+          required>
+
+        <label for="email">Email address</label>
+        <input id="email"
+          type="email"
+          name="email"
+          [(ngModel)]="regData.email"
+          placeholder="you@example.com"
+          autocomplete="email"
+          required>
+
+        <label for="regPassword">Password</label>
+        <input id="regPassword"
+          type="password"
+          name="regPassword"
+          [(ngModel)]="regData.password"
+          placeholder="Create a password"
+          autocomplete="new-password"
+          required>
+
+        <p class="error" *ngIf="error">{{ error }}</p>
+
+        <button class="primary-btn" type="submit" [disabled]="loading">
+          {{ loading ? 'Creating account...' : 'Create account' }}
+          <span>→</span>
+        </button>
+      </form>
+
+      <div class="demo-section" *ngIf="!isRegister">
+        <div class="demo-heading">
+          <span>DEMO ACCESS</span>
+          <span class="demo-line"></span>
+        </div>
+
+        <p class="demo-description">
+          Explore the workspace using a demo role.
+        </p>
+
+        <div class="demo-roles">
+          <button type="button" class="role-card"
+            (click)="fillDemo('creator')">
+            <span class="role-icon">✎</span>
+            <span class="role-info">
+              <strong>Creator</strong>
+              <small>Create content</small>
+            </span>
+            <span class="role-arrow">→</span>
+          </button>
+
+          <button type="button" class="role-card"
+            (click)="fillDemo('manager')">
+            <span class="role-icon">◷</span>
+            <span class="role-info">
+              <strong>Manager</strong>
+              <small>Review content</small>
+            </span>
+            <span class="role-arrow">→</span>
+          </button>
+
+          <button type="button" class="role-card"
+            (click)="fillDemo('admin')">
+            <span class="role-icon">⌘</span>
+            <span class="role-info">
+              <strong>Admin</strong>
+              <small>Manage workspace</small>
+            </span>
+            <span class="role-arrow">→</span>
+          </button>
+        </div>
+
+        <p class="demo-note">
+          Demo accounts must be enabled on the server.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span>VIBECHECK AI</span>
+    <span>Built by Team Karasuno · CodeNexus India 2026</span>
+  </footer>
+</main>

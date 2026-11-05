@@ -1,0 +1,270 @@
+
+<app-navbar />
+
+<main class="review-page">
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">TEAM WORKSPACE</span>
+      <h1>Content review</h1>
+      <p>Review submissions and keep brand communication consistent.</p>
+    </div>
+
+    <div class="tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.active]="tab() === 'pending'"
+        (click)="setTab('pending')"
+      >
+        Pending
+        @if (stats()?.pending; as pending) {
+          <span class="tab-count">{{ pending }}</span>
+        }
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        [class.active]="tab() === 'all'"
+        (click)="setTab('all')"
+      >
+        All submissions
+      </button>
+    </div>
+  </header>
+
+  @if (stats()) {
+    <section class="stats-grid">
+      <article class="stat-card">
+        <span class="stat-label">Pending review</span>
+        <strong class="stat-value">{{ stats()!.pending }}</strong>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Approved</span>
+        <strong class="stat-value approved">{{ stats()!.approved }}</strong>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Rejected</span>
+        <strong class="stat-value rejected">{{ stats()!.rejected }}</strong>
+      </article>
+
+      <article class="stat-card">
+        <span class="stat-label">Needs revision</span>
+        <strong class="stat-value revision">{{ stats()!.needsRevision }}</strong>
+      </article>
+    </section>
+  }
+
+  @if (errorMessage()) {
+    <div class="error-banner">{{ errorMessage() }}</div>
+  }
+
+  <section class="review-layout">
+
+    <!-- Submission list -->
+    <aside class="submission-column">
+
+      <div class="column-heading">
+        <div>
+          <h2>Submissions</h2>
+          <span>{{ drafts().length }} results</span>
+        </div>
+      </div>
+
+      @if (loading()) {
+        <div class="list-state">Loading submissions...</div>
+      } @else if (drafts().length === 0) {
+        <div class="list-state">
+          <span class="empty-icon">—</span>
+          <h3>All caught up</h3>
+          <p>There are no submissions in this view.</p>
+        </div>
+      } @else {
+        <div class="submission-list">
+          @for (draft of drafts(); track draft.id) {
+            <button
+              type="button"
+              class="submission-card"
+              [class.selected]="selected()?.id === draft.id"
+              (click)="select(draft)"
+            >
+              <div class="submission-top">
+                <span class="draft-number">Draft #{{ draft.id }}</span>
+                <span
+                  class="status"
+                  [class]="'status ' + draft.reviewStatus.toLowerCase()"
+                >
+                  {{ statusLbl(draft.reviewStatus) }}
+                </span>
+              </div>
+
+              <p class="submission-preview">
+                {{ draft.originalDraftText.slice(0, 110) }}
+                @if (draft.originalDraftText.length > 110) {
+                  ...
+                }
+              </p>
+
+              <div class="submission-meta">
+                <span>{{ draft.submittedByUsername }}</span>
+                <span>{{ fmtDate(draft.submittedAt) }}</span>
+              </div>
+
+              <div class="mini-counts">
+                <span class="green">{{ draft.supportedCount }} supported</span>
+                <span class="red">{{ draft.contradictedCount }} issues</span>
+                <span class="amber">{{ draft.unverifiedCount }} unverified</span>
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </aside>
+
+    <!-- Review details -->
+    <section class="detail-column">
+
+      @if (!selected()) {
+        <div class="detail-empty">
+          <span class="empty-icon">↖</span>
+          <h2>Choose a submission</h2>
+          <p>Select a draft to read its content and make a review decision.</p>
+        </div>
+      } @else {
+        <div class="detail-content">
+
+          <header class="detail-header">
+            <div>
+              <span class="eyebrow">SUBMISSION DETAILS</span>
+              <h2>Draft #{{ selected()!.id }}</h2>
+              <p>
+                Submitted by <strong>{{ selected()!.submittedByUsername }}</strong>
+                · {{ fmtDate(selected()!.submittedAt) }}
+              </p>
+            </div>
+
+            <span
+              class="status large-status"
+              [class]="'status ' + selected()!.reviewStatus.toLowerCase()"
+            >
+              {{ statusLbl(selected()!.reviewStatus) }}
+            </span>
+          </header>
+
+          <section class="compliance-summary">
+            <div>
+              <strong>{{ selected()!.supportedCount }}</strong>
+              <span>Supported</span>
+            </div>
+            <div>
+              <strong>{{ selected()!.contradictedCount }}</strong>
+              <span>Contradicted</span>
+            </div>
+            <div>
+              <strong>{{ selected()!.unverifiedCount }}</strong>
+              <span>Unverified</span>
+            </div>
+            <div>
+              <strong>{{ selected()!.localViolationCount }}</strong>
+              <span>Rule alerts</span>
+            </div>
+          </section>
+
+          <section class="draft-section">
+            <div class="section-title">
+              <h3>Submitted content</h3>
+              <span>Original draft</span>
+            </div>
+
+            <div class="draft-content">
+              {{ selected()!.originalDraftText }}
+            </div>
+          </section>
+
+          @if (selected()!.reviewStatus === 'PENDING_REVIEW') {
+            <section class="decision-section">
+              <div class="section-title">
+                <h3>Review decision</h3>
+                <span>Choose an outcome</span>
+              </div>
+
+              <label for="manager-feedback">Feedback for creator</label>
+
+              <textarea
+                id="manager-feedback"
+                rows="4"
+                [(ngModel)]="managerComments"
+                placeholder="Share what works or what needs improvement..."
+              ></textarea>
+
+              @if (validationMessage()) {
+                <p class="validation-message">{{ validationMessage() }}</p>
+              }
+
+              <div class="decision-actions">
+                <button
+                  type="button"
+                  class="decision-button approve"
+                  [disabled]="submitting()"
+                  (click)="decide('APPROVED')"
+                >
+                  Approve
+                </button>
+
+                <button
+                  type="button"
+                  class="decision-button revision"
+                  [disabled]="submitting()"
+                  (click)="decide('NEEDS_REVISION')"
+                >
+                  Request changes
+                </button>
+
+                <button
+                  type="button"
+                  class="decision-button reject"
+                  [disabled]="submitting()"
+                  (click)="decide('REJECTED')"
+                >
+                  Reject
+                </button>
+              </div>
+            </section>
+          } @else {
+            <section class="outcome-section">
+              <div class="section-title">
+                <h3>Review outcome</h3>
+              </div>
+
+              <span
+                class="status large-status"
+                [class]="'status ' + selected()!.reviewStatus.toLowerCase()"
+              >
+                {{ statusLbl(selected()!.reviewStatus) }}
+              </span>
+
+              @if (selected()!.managerComments) {
+                <div class="manager-feedback">
+                  <span>MANAGER FEEDBACK</span>
+                  <p>{{ selected()!.managerComments }}</p>
+                </div>
+              }
+
+              @if (selected()!.reviewedAt) {
+                <p class="review-date">
+                  Reviewed {{ fmtDate(selected()!.reviewedAt!) }}
+                </p>
+              }
+            </section>
+          }
+
+        </div>
+      }
+
+    </section>
+  </section>
+
+</main>

@@ -1,0 +1,246 @@
+
+<main class="home">
+
+  <nav class="navbar">
+    <a routerLink="/" class="brand">vibecheck<span>.</span></a>
+
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a routerLink="/login" class="login-link">Sign in</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-content">
+      <span class="eyebrow">INTELLIGENT BRAND GOVERNANCE</span>
+
+      <h1>
+        Your brand voice,<br>
+        <em>protected at every step.</em>
+      </h1>
+
+      <p>
+        Create, check and review content against your official
+        brand guidelines. Keep every message consistent,
+        compliant and true to your identity.
+      </p>
+
+      <div class="hero-actions">
+        <a routerLink="/login" class="primary-btn">
+          Explore workspace <span>→</span>
+        </a>
+        <a href="#how-it-works" class="secondary-btn">
+          See how it works
+        </a>
+      </div>
+
+      <div class="hero-note">
+        <span class="note-line"></span>
+        Built for teams that care about their brand.
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="visual-label">CONTENT COMPLIANCE OVERVIEW</div>
+
+      <div class="visual-document">
+        <div class="doc-top">
+          <span>CONTENT REVIEW</span>
+          <span class="doc-status">ANALYSIS</span>
+        </div>
+
+        <h3>Brand campaign draft</h3>
+
+        <p class="sample-text">
+          We are committed to creating a better experience
+          through thoughtful, reliable solutions.
+        </p>
+
+        <div class="result-row">
+          <span class="result-dot supported"></span>
+          <div>
+            <strong>Supported</strong>
+            <small>Matches official brand guidelines</small>
+          </div>
+          <span class="result-count">01</span>
+        </div>
+
+        <div class="result-row">
+          <span class="result-dot contradicted"></span>
+          <div>
+            <strong>Contradicted</strong>
+            <small>Conflicts with a guideline</small>
+          </div>
+          <span class="result-count">01</span>
+        </div>
+
+        <div class="result-row">
+          <span class="result-dot unverified"></span>
+          <div>
+            <strong>Unverified</strong>
+            <small>Needs additional evidence</small>
+          </div>
+          <span class="result-count">01</span>
+        </div>
+
+        <div class="visual-footer">
+          <span>VIBECHECK AI</span>
+          <span>BRAND INTELLIGENCE
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="workflow" id="how-it-works">
+    <div class="section-heading">
+      <span class="eyebrow">A SIMPLE WORKFLOW</span>
+      <h2>From guidelines to confident content.</h2>
+      <p>
+        Four steps to help your team maintain a consistent brand voice.
+      </p>
+    </div>
+
+    <div class="steps">
+      <article class="step" [class.expanded]="activeStep() === 1">
+  <span class="step-number">01</span>
+  <div class="step-icon">↥</div>
+  <h3>Upload guidelines</h3>
+  <p>
+    Add official brand documents and create a reliable
+    reference for your content.
+  </p>
+  <button class="step-toggle" (click)="toggleStep(1)"
+          [attr.aria-expanded]="activeStep() === 1">
+    {{ activeStep() === 1 ? 'Show less ↑' : 'Explore step →' }}
+  </button>
+  @if (activeStep() === 1) {
+    <div class="step-detail">
+      Upload your brand handbook PDFs so VibeCheck AI can
+      use them as reference material during compliance checks.
+    </div>
+  }
+</article>
+
+<article class="step" [class.expanded]="activeStep() === 2">
+  <span class="step-number">02</span>
+  <div class="step-icon">✎</div>
+  <h3>Create content</h3>
+  <p>
+    Draft your content in the editor and refine
+    your messaging.
+  </p>
+  <button class="step-toggle" (click)="toggleStep(2)"
+          [attr.aria-expanded]="activeStep() === 2">
+    {{ activeStep() === 2 ? 'Show less ↑' : 'Explore step →' }}
+  </button>
+  @if (activeStep() === 2) {
+    <div class="step-detail">
+      Write or paste your campaign copy, announcements,
+      marketing messages and other brand content.
+    </div>
+  }
+</article>
+
+<article class="step" [class.expanded]="activeStep() === 3">
+  <span class="step-number">03</span>
+  <div class="step-icon">⌕</div>
+  <h3>Check compliance</h3>
+  <p>
+    Identify supported, contradicted and unverified
+    claims with guideline references.
+  </p>
+  <button class="step-toggle" (click)="toggleStep(3)"
+          [attr.aria-expanded]="activeStep() === 3">
+    {{ activeStep() === 3 ? 'Show less ↑' : 'Explore step →' }}
+  </button>
+  @if (activeStep() === 3) {
+    <div class="step-detail">
+      Review findings, inspect supporting evidence and
+      use suggested corrections to improve your draft.
+    </div>
+  }
+</article>
+
+<article class="step" [class.expanded]="activeStep() === 4">
+  <span class="step-number">04</span>
+  <div class="step-icon">✓</div>
+  <h3>Review & improve</h3>
+  <p>
+    Managers review submissions and provide feedback
+    for content creators.
+  </p>
+  <button class="step-toggle" (click)="toggleStep(4)"
+          [attr.aria-expanded]="activeStep() === 4">
+    {{ activeStep() === 4 ? 'Show less ↑' : 'Explore step →' }}
+  </button>
+  @if (activeStep() === 4) {
+    <div class="step-detail">
+      Managers can approve content, request revisions
+      or reject submissions with feedback.
+    </div>
+  }
+</article>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="section-heading">
+      <span class="eyebrow">WHY VIBECHECK AI</span>
+      <h2>More than a simple content checker.</h2>
+    </div>
+
+    <div class="feature-grid">
+      <article class="feature">
+        <h3>Evidence-backed checks</h3>
+        <p>
+          Connect content findings to relevant pages
+          in your official brand documents.
+        </p>
+      </article>
+
+      <article class="feature">
+        <h3>Actionable corrections</h3>
+        <p>
+          Get suggested content improvements instead
+          of just being told something is wrong.
+        </p>
+      </article>
+
+      <article class="feature">
+        <h3>Team review workflow</h3>
+        <p>
+          Bring creators and managers together through
+          a structured review process.
+        </p>
+      </article>
+
+      <article class="feature">
+        <h3>Accountability</h3>
+        <p>
+          Maintain an audit trail of important
+          content and review activities.
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <section class="closing">
+    <span class="eyebrow">READY TO GET STARTED?</span>
+    <h2>Make every word count.</h2>
+    <p>
+      Bring your brand guidelines and content workflow
+      together in one place.
+    </p>
+    <a routerLink="/login" class="primary-btn">
+      Enter VibeCheck AI <span>→</span>
+    </a>
+  </section>
+
+  <footer class="footer">
+    <a routerLink="/" class="brand">vibecheck<span>.</span></a>
+    <span>Built by Team Karasuno · CodeNexus India 2026</span>
+  </footer>
+
+</main>

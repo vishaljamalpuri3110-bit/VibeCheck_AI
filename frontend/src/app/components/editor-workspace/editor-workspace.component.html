@@ -1,0 +1,345 @@
+
+<app-navbar />
+
+<main class="workspace">
+
+  <!-- Editor -->
+  <section class="editor-panel">
+
+    <header class="workspace-heading">
+      <div>
+        <span class="eyebrow">CONTENT STUDIO</span>
+        <h1>Your writing space</h1>
+        <p class="heading-subtitle">
+          Shape your message. Check it against your brand standards.
+        </p>
+      </div>
+
+      @if (result()) {
+        <span
+          class="overall-pill"
+          [class]="'overall-pill ' + result()!.overallState.toLowerCase()"
+        >
+          <span class="pill-dot"></span>
+          {{ stateLabel(result()!.overallState) }}
+        </span>
+      }
+    </header>
+
+    <div class="document-card">
+
+      <div class="document-toolbar">
+        <div class="document-label">
+          <span class="document-icon">✎</span>
+          <span>Untitled draft</span>
+        </div>
+
+        <div class="document-actions">
+          <span class="word-count">
+            {{ wordCount() }} words
+          </span>
+
+          <button
+            class="text-button"
+            type="button"
+            [disabled]="!draft()"
+            (click)="clearDraft()"
+          >
+            Clear draft
+          </button>
+        </div>
+      </div>
+
+      <textarea
+        class="editor"
+        aria-label="Marketing draft editor"
+        [ngModel]="draft()"
+        (ngModelChange)="onEdit($event)"
+        placeholder="Start writing your content here...
+
+For example:
+Introduce your product, describe its benefits, and explain what makes it valuable to your audience."
+      ></textarea>
+
+      <div class="document-footer">
+        <span class="writing-hint">Your draft is ready for review</span>
+
+        <button
+          class="scan-button"
+          type="button"
+          [disabled]="!draft().trim() || scanning()"
+          (click)="scan()"
+        >
+          @if (scanning()) {
+            <span class="spinner"></span>
+            Checking draft
+          } @else {
+            Check compliance
+            <span aria-hidden="true">→</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    @if (result()?.piiDetected) {
+      <div class="privacy-note">
+        <span>🔒</span>
+        Personal information was detected and masked before analysis.
+      </div>
+    }
+
+    <p class="editor-footnote">
+      Review your claims before publishing. A compliance check is a guide,
+      not a substitute for final human approval.
+    </p>
+  </section>
+
+
+  <!-- Results -->
+  <aside class="results-panel">
+
+    <header class="results-heading">
+      <div>
+        <span class="eyebrow">REVIEW</span>
+        <h2>Compliance overview</h2>
+      </div>
+
+      @if (result()) {
+        <span class="review-id">
+          Review #{{ result()!.draftReviewLogId }}
+        </span>
+      }
+    </header>
+
+
+    <!-- Initial state -->
+    @if (!result() && !scanning() && !scanError()) {
+      <div class="empty-state">
+        <div class="empty-icon">⌕</div>
+        <h3>Nothing to review yet</h3>
+        <p>
+          Your compliance results will appear here after you check your draft.
+        </p>
+      </div>
+    }
+
+
+    <!-- Loading -->
+    @if (scanning()) {
+      <div class="loading-state">
+        <span class="spinner spinner-dark"></span>
+        <h3>Reviewing your content</h3>
+        <p>Checking brand rules and verifying claims.</p>
+      </div>
+    }
+
+
+    <!-- Error -->
+    @if (scanError() && !scanning()) {
+      <div class="error-state">
+        <span class="error-icon">!</span>
+        <div>
+          <h3>Check couldn't be completed</h3>
+          <p>{{ scanError() }}</p>
+          <button type="button" class="retry-button" (click)="scan()">
+            Try again
+          </button>
+        </div>
+      </div>
+    }
+
+
+    <!-- Results -->
+    @if (result() && !scanning()) {
+      <div class="results-content">
+
+        <!-- Overall status -->
+        <div
+          class="result-summary"
+          [class]="'result-summary ' + result()!.overallState.toLowerCase()"
+        >
+          <div class="summary-symbol">
+            {{ overallIcon() }}
+          </div>
+
+          <div class="summary-copy">
+            <span class="summary-caption">Overall assessment</span>
+            <strong>{{ stateLabel(result()!.overallState) }}</strong>
+          </div>
+        </div>
+
+
+        <!-- Counts -->
+        <div class="status-counts">
+          <div class="count-item">
+            <span class="count-number supported-text">
+              {{ result()!.supportedCount }}
+            </span>
+            <span class="count-label">Supported</span>
+          </div>
+
+          <div class="count-item">
+            <span class="count-number contradicted-text">
+              {{ result()!.contradictedCount }}
+            </span>
+            <span class="count-label">Contradicted</span>
+          </div>
+
+          <div class="count-item">
+            <span class="count-number unverified-text">
+              {{ result()!.unverifiedCount }}
+            </span>
+            <span class="count-label">Unverified</span>
+          </div>
+        </div>
+
+
+        <!-- Local rule violations -->
+        @if (result()!.localViolations.length > 0) {
+          <section class="result-section">
+            <div class="section-heading">
+              <div>
+                <h3>Brand rule alerts</h3>
+                <p>Issues detected by local compliance rules</p>
+              </div>
+              <span class="section-count">
+                {{ result()!.localViolations.length }}
+              </span>
+            </div>
+
+            @for (violation of result()!.localViolations; track violation.ruleId) {
+              <article
+                class="violation-item"
+                [class]="'violation-item ' + violation.severity.toLowerCase()"
+              >
+                <div class="violation-top">
+                  <strong>{{ violation.ruleName }}</strong>
+                  <span class="severity-label">
+                    {{ violation.severity }}
+                  </span>
+                </div>
+
+                <p class="matched-text">
+                  "{{ violation.matchedText }}"
+                </p>
+
+                @if (violation.description) {
+                  <p class="violation-description">
+                    {{ violation.description }}
+                  </p>
+                }
+              </article>
+            }
+          </section>
+        }
+
+
+        <!-- AI verification -->
+        @if (result()!.verificationItems.length > 0) {
+          <section class="result-section">
+            <div class="section-heading">
+              <div>
+                <h3>Claim verification</h3>
+                <p>Evidence checks for statements in your draft</p>
+              </div>
+              <span class="section-count">
+                {{ result()!.verificationItems.length }}
+              </span>
+            </div>
+
+            @for (item of result()!.verificationItems; track $index) {
+              <article
+                class="claim-item"
+                [class]="'claim-item ' + item.state.toLowerCase()"
+              >
+                <button
+                  type="button"
+                  class="claim-toggle"
+                  [attr.aria-expanded]="isExpanded($index)"
+                  (click)="toggleDetails($index)"
+                >
+                  <span class="claim-status-icon">
+                    {{ stateIcon(item.state) }}
+                  </span>
+
+                  <span class="claim-main">
+                    <span class="claim-state">
+                      {{ stateLabel(item.state) }}
+                    </span>
+                    <span class="claim-text">{{ item.claim }}</span>
+                  </span>
+
+                  <span class="claim-chevron">
+                    {{ isExpanded($index) ? '−' : '+' }}
+                  </span>
+                </button>
+
+                @if (isExpanded($index)) {
+                  <div class="claim-details">
+
+                    <div class="confidence-line">
+                      <span>Confidence</span>
+                      <strong>
+                        {{ (item.confidenceScore * 100).toFixed(0) }}%
+                      </strong>
+                    </div>
+
+                    @if (item.rationale) {
+                      <p class="rationale">{{ item.rationale }}</p>
+                    }
+
+                    @if ((item.evidenceIds?.length ?? 0) > 0) {
+                      <div class="evidence-block">
+                        <span class="detail-label">SOURCE EVIDENCE</span>
+
+                        @for (evidence of item.evidenceIds; track evidence.chunkId) {
+                          <div class="evidence-item">
+                            <span class="evidence-name">
+                              {{ evidence.documentName }}
+                            </span>
+                            <span class="evidence-page">
+                              Page {{ evidence.pageNumber }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    @if (item.suggestedCorrection) {
+                      <div class="correction-block">
+                        <span class="detail-label">SUGGESTED EDIT</span>
+                        <p>{{ item.suggestedCorrection }}</p>
+
+                        <button
+                          type="button"
+                          class="apply-button"
+                          (click)="applyCorrection(item)"
+                        >
+                          Apply to draft
+                          <span aria-hidden="true">↗</span>
+                        </button>
+                      </div>
+                    }
+
+                  </div>
+                }
+              </article>
+            }
+          </section>
+        }
+
+        @if (
+          result()!.localViolations.length === 0 &&
+          result()!.verificationItems.length === 0
+        ) {
+          <div class="empty-results">
+            <h3>No claim details returned</h3>
+            <p>The review completed, but there are no individual findings to display.</p>
+          </div>
+        }
+
+      </div>
+    }
+  </aside>
+
+</main>
