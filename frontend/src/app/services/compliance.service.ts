@@ -25,4 +25,11 @@ export class ComplianceService {
   deactivateRule(id: number): Observable<string> {
     return this.http.delete(`${API_BASE}/compliance/rules/${id}`, { responseType: 'text' });
   }
+
+  writeInOurVoice(prompt: string, contentType: string): Observable<{ generatedCopy: string; voiceToneNotes: string; estimatedVoiceMatch: number }> {
+    return this.http.post<{ generatedCopy: string; voiceToneNotes: string; estimatedVoiceMatch: number }>(
+      `${API_BASE}/compliance/voice-assist`,
+      { prompt, contentType }
+    );
+  }
 }

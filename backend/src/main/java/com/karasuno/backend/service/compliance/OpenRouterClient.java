@@ -904,10 +904,15 @@ Never invent evidence or evidence references.
                 REQUIRED RESPONSE FORMAT:
 
                 {
+                  "voiceScore": 92,
+                  "voiceFeedback": "Direct, professional, calm tone adhering to brand standards with minor claim unverified.",
                   "verificationItems": [
                     {
                       "claim": "Exact problematic text",
                       "state": "SUPPORTED",
+                      "severity": "SUGGESTION",
+                      "guidelineReference": "Tone and Voice Standards",
+                      "findingType": "TONE_CONSISTENCY",
                       "confidenceScore": 0.95,
                       "rationale": "Explanation based on guidelines",
                       "suggestedCorrection": "Improved compliant text",
@@ -922,6 +927,11 @@ Never invent evidence or evidence references.
                     }
                   ]
                 }
+
+                Severity must be one of: "CRITICAL", "WARNING", "SUGGESTION".
+                - CONTRADICTED claims must be CRITICAL or WARNING.
+                - UNVERIFIED factual claims must be WARNING.
+                - Minor tone or phrasing improvements must be SUGGESTION.
 
                 If no reference documents are available, do not
                 invent evidence. Clearly classify unsupported claims

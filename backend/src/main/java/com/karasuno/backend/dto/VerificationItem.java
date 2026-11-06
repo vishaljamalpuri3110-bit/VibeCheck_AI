@@ -30,11 +30,20 @@ public class VerificationItem {
     /** Short explanation of why this state was assigned */
     private String rationale;
 
-    /** Independent validation result for the suggested correction */
-private String correctionValidationState;
+    /** Severity level: CRITICAL, WARNING, or SUGGESTION */
+    private String severity;
 
-/** Explanation of why the correction passed or needs review */
-private String correctionValidationRationale;
+    /** Specific guideline, rule, or claim category violated */
+    private String guidelineReference;
+
+    /** Category: e.g. CLAIM_VERIFICATION, TONE_CONSISTENCY, PROHIBITED_TERMINOLOGY, COMPETITOR_MENTION, PROMOTIONAL_HYPE */
+    private String findingType;
+
+    /** Independent validation result for the suggested correction */
+    private String correctionValidationState;
+
+    /** Explanation of why the correction passed or needs review */
+    private String correctionValidationRationale;
     /** Evidence citation record pointing to a specific document chunk. */
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)

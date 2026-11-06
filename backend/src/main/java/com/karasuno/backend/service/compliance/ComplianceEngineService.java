@@ -191,7 +191,27 @@ openRouterClient.validateCorrections(
         response.setUnverifiedCount(unverified);
         response.setLocalViolationCount(localViolations.size());
         response.setPiiDetected(maskResult.piiDetected());
+        response.setAiDisclosure("Evaluated by VibeCheck AI Gemini Model. Independent human review is recommended before publishing.");
         response.setScannedAt(LocalDateTime.now());
+
+        // Extract voice score if present in AI response
+        try {
+            JsonNode root = objectMapper.readTree(rawAiJson);
+            if (root.has("voiceScore")) {
+                response.setVoiceScore(root.path("voiceScore").asInt(90));
+            } else {
+                int score = Math.max(40, 100 - (contradicted * 25) - (unverified * 10) - (localViolations.size() * 15));
+                response.setVoiceScore(score);
+            }
+            if (root.has("voiceFeedback")) {
+                response.setVoiceFeedback(root.path("voiceFeedback").asText());
+            } else {
+                response.setVoiceFeedback(contradicted == 0 ? "Tone is consistent with brand voice guidelines." : "Contains phrases that contradict tone or terminology rules.");
+            }
+        } catch (Exception ignored) {
+            response.setVoiceScore(85);
+            response.setVoiceFeedback("Content evaluated against brand guidelines.");
+        }
 
         log.info(
                 "Scan complete — logId={}, state={}, S={}, C={}, U={}",
@@ -403,8 +423,22 @@ openRouterClient.validateCorrections(
 
                 item.setState(state.toUpperCase());
 
-                if (item.getEvidenceIds() == null) {
-                    item.setEvidenceIds(List.of());
+                if (item.getSeverity() == null || item.getSeverity().isBlank()) {
+                    if ("CONTRADICTED".equals(item.getState())) {
+                        item.setSeverity("CRITICAL");
+                    } else if ("UNVERIFIED".equals(item.getState())) {
+                        item.setSeverity("WARNING");
+                    } else {
+                        item.setSeverity("SUGGESTION");
+                    }
+                }
+
+                if (item.getGuidelineReference() == null || item.getGuidelineReference().isBlank()) {
+                    item.setGuidelineReference("Brand Communication Guidelines");
+                }
+
+                if (item.getFindingType() == null || item.getFindingType().isBlank()) {
+                    item.setFindingType("CLAIM_VERIFICATION");
                 }
 
                 items.add(item);

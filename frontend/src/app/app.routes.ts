@@ -48,6 +48,24 @@ export const routes: Routes = [
     canActivate: [authGuard, managerGuard]
   },
 
+  // Guidelines Builder & Management: Manager and Admin
+  {
+    path: 'guidelines',
+    loadComponent: () =>
+      import('./components/brand-guidelines/brand-guidelines.component')
+        .then(m => m.BrandGuidelinesComponent),
+    canActivate: [authGuard, managerGuard]
+  },
+
+  // Governance Insights: Manager and Admin
+  {
+    path: 'governance',
+    loadComponent: () =>
+      import('./components/governance-dashboard/governance-dashboard.component')
+        .then(m => m.GovernanceDashboardComponent),
+    canActivate: [authGuard, managerGuard]
+  },
+
   // Unknown routes return home
   {
     path: '**',

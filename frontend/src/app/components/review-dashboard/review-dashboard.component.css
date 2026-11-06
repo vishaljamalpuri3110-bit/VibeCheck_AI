@@ -636,3 +636,159 @@ textarea {
     width: 100%;
   }
 }
+
+/* Enhancements: Voice banner, format badge, and discussion thread */
+.format-badge, .format-tag {
+  background: #f1eee8;
+  color: #77736d;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.voice-mini {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.comment-mini {
+  font-size: 11px;
+  color: #77736d;
+}
+
+.voice-detail-banner {
+  background: #fdfbf7;
+  border: 1px solid #eee7dc;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.voice-score-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e8e3dc;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.voice-score-pill strong {
+  font-size: 16px;
+  color: #a9664d;
+}
+
+.voice-score-pill span {
+  font-size: 9.5px;
+  color: #77736d;
+  text-transform: uppercase;
+}
+
+.voice-detail-banner p {
+  margin: 0;
+  font-size: 13px;
+  color: #292824;
+  line-height: 1.4;
+}
+
+.discussion-section {
+  margin-top: 24px;
+  border-top: 1px solid #f1eee8;
+  padding-top: 20px;
+}
+
+.empty-thread-note {
+  font-size: 12.5px;
+  color: #77736d;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+.comments-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 14px;
+}
+
+.comment-bubble {
+  background: #f7f5f1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12.5px;
+}
+
+.comment-bubble.manager-comment {
+  background: #faf4f0;
+  border-left: 3px solid #a9664d;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.comment-role {
+  color: #a9664d;
+  font-weight: 600;
+}
+
+.comment-time {
+  color: #858078;
+}
+
+.comment-body {
+  margin: 0;
+  color: #292824;
+  line-height: 1.4;
+}
+
+.reply-box {
+  display: flex;
+  gap: 8px;
+}
+
+.reply-box input {
+  flex: 1;
+  border: 1px solid #e8e3dc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.reply-box input:focus {
+  outline: none;
+  border-color: #a9664d;
+}
+
+.btn-reply-send {
+  background: #a9664d;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-reply-send:hover {
+  background: #93563f;
+}
+

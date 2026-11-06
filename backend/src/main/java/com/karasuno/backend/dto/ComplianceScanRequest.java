@@ -9,4 +9,8 @@ public class ComplianceScanRequest {
     private String draftText;
     /** Optional title for display in the review dashboard */
     private String draftTitle;
+    /** Content type: e.g. SOCIAL_POST, AD_COPY, EMAIL, BLOG_ARTICLE, GENERAL */
+    private String contentType;
+    /** Optional existing ContentSubmission ID if updating */
+    private Long submissionId;
 }

@@ -1,0 +1,308 @@
+<app-navbar />
+
+<main class="guidelines-page">
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">BRAND GOVERNANCE</span>
+      <h1>Brand Guidelines & Standards</h1>
+      <p>Configure official brand voice, terminology, verified claims, and design rules.</p>
+    </div>
+
+    <div class="tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'builder'"
+        (click)="setTab('builder')"
+      >
+        Guidelines Builder
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'glossary'"
+        (click)="setTab('glossary')"
+      >
+        Terminology & Glossary ({{ terms().length }})
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'facts'"
+        (click)="setTab('facts')"
+      >
+        Approved Facts & Claims ({{ facts().length }})
+      </button>
+
+      <button
+        type="button"
+        class="tab"
+        [class.active]="activeTab() === 'history'"
+        (click)="setTab('history')"
+      >
+        Version History
+      </button>
+    </div>
+  </header>
+
+  @if (saveSuccess()) {
+    <div class="alert alert-success">{{ saveSuccess() }}</div>
+  }
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  <!-- TAB 1: GUIDELINES BUILDER -->
+  @if (activeTab() === 'builder') {
+    <div class="builder-layout">
+
+      <section class="card form-card">
+        <div class="card-header">
+          <h2>Brand Identity & Voice Profile</h2>
+          <span class="version-tag">Version {{ guideline().version }}</span>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="brandName">Brand Name</label>
+            <input id="brandName" type="text" [(ngModel)]="guideline().brandName" placeholder="e.g. VibeCheck AI" />
+          </div>
+
+          <div class="form-group">
+            <label for="version">Version Tag</label>
+            <input id="version" type="text" [(ngModel)]="guideline().version" placeholder="e.g. 1.1" />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="missionStatement">Mission & Core Message</label>
+            <textarea id="missionStatement" rows="2" [(ngModel)]="guideline().missionStatement" placeholder="Brief statement describing brand purpose and commitment..."></textarea>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="toneOfVoice">Tone of Voice Descriptors</label>
+            <input id="toneOfVoice" type="text" [(ngModel)]="guideline().toneOfVoice" placeholder="e.g. Calm, direct, trustworthy, empathetic, professional (avoid hype)" />
+            <span class="field-hint">Used by the AI content review engine to score voice consistency.</span>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="targetAudience">Target Audience & Persona</label>
+            <input id="targetAudience" type="text" [(ngModel)]="guideline().targetAudience" placeholder="e.g. Enterprise content creators, compliance officers, brand managers" />
+          </div>
+
+          <div class="form-group full-width">
+            <label for="primaryColors">Brand Color Palette (Hex Codes)</label>
+            <input id="primaryColors" type="text" [(ngModel)]="guideline().primaryColors" placeholder="#F7F5F1, #FFFFFF, #292824, #A9664D" />
+            <div class="color-swatches">
+              @for (color of getColorList(); track color) {
+                <div class="swatch" [style.background-color]="color" [title]="color">
+                  <span>{{ color }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="competitorWatchlist">Competitor Watchlist (Comma separated)</label>
+            <input id="competitorWatchlist" type="text" [(ngModel)]="guideline().competitorWatchlist" placeholder="e.g. CompetitorA, CompetitorB, RivalApp" />
+            <span class="field-hint">Flagged by the review engine whenever mentioned in marketing drafts.</span>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="guidelineContent">Core Brand Rules & Directives</label>
+            <textarea id="guidelineContent" rows="5" [(ngModel)]="guideline().guidelineContent" placeholder="Document specific writing principles, capitalization rules, and required phrasing..."></textarea>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button type="button" class="btn-primary" [disabled]="loading()" (click)="saveGuideline()">
+            {{ loading() ? 'Saving...' : 'Save & Publish Guidelines' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Sidebar preview -->
+      <aside class="card preview-card">
+        <h3>Active Standards Summary</h3>
+        <div class="summary-item">
+          <span class="summary-label">Brand</span>
+          <strong>{{ guideline().brandName }}</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Tone</span>
+          <p>{{ guideline().toneOfVoice || 'Not specified' }}</p>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Watchlist</span>
+          <p>{{ guideline().competitorWatchlist || 'None configured' }}</p>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Verified Facts</span>
+          <strong>{{ facts().length }} items recorded</strong>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Glossary</span>
+          <strong>{{ terms().length }} terminology rules</strong>
+        </div>
+      </aside>
+
+    </div>
+  }
+
+  <!-- TAB 2: TERMINOLOGY & GLOSSARY -->
+  @if (activeTab() === 'glossary') {
+    <div class="section-layout">
+
+      <section class="card form-card compact">
+        <h3>Add Term to Glossary</h3>
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label>Term / Phrase</label>
+            <input type="text" [(ngModel)]="newTerm.term" placeholder="e.g. revolutionary" />
+          </div>
+
+          <div class="form-group flex-1">
+            <label>Type</label>
+            <select [(ngModel)]="newTerm.prohibited">
+              <option [ngValue]="true">Prohibited (Violates Rule)</option>
+              <option [ngValue]="false">Approved Brand Term</option>
+            </select>
+          </div>
+
+          <div class="form-group flex-2">
+            <label>Approved Alternative</label>
+            <input type="text" [(ngModel)]="newTerm.approvedAlternative" placeholder="e.g. innovative" />
+          </div>
+
+          <div class="form-group flex-1 action-cell">
+            <button type="button" class="btn-primary" (click)="addTerm()">Add Term</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Term / Keyword</th>
+              <th>Status</th>
+              <th>Approved Replacement</th>
+              <th>Category</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (term of terms(); track term.id) {
+              <tr>
+                <td><strong>"{{ term.term }}"</strong></td>
+                <td>
+                  <span class="badge" [class.prohibited]="term.prohibited" [class.approved]="!term.prohibited">
+                    {{ term.prohibited ? 'Prohibited' : 'Approved' }}
+                  </span>
+                </td>
+                <td>{{ term.approvedAlternative || '—' }}</td>
+                <td><span class="cat-tag">{{ term.category || 'GENERAL' }}</span></td>
+                <td>
+                  <button type="button" class="btn-link text-danger" (click)="deactivateTerm(term.id)">Deactivate</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  }
+
+  <!-- TAB 3: APPROVED FACTS & CLAIMS -->
+  @if (activeTab() === 'facts') {
+    <div class="section-layout">
+
+      <section class="card form-card compact">
+        <h3>Record Approved Fact or Claim</h3>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label>Topic</label>
+            <input type="text" [(ngModel)]="newFact.topic" placeholder="e.g. Security / SLA" />
+          </div>
+
+          <div class="form-group flex-3">
+            <label>Verified Fact / Claim Statement</label>
+            <input type="text" [(ngModel)]="newFact.verifiedClaim" placeholder="e.g. ISO 27001 certified data center infrastructure" />
+          </div>
+
+          <div class="form-group flex-2">
+            <label>Source Reference / Proof</label>
+            <input type="text" [(ngModel)]="newFact.sourceReference" placeholder="e.g. Security Whitepaper 2026 p.4" />
+          </div>
+
+          <div class="form-group flex-1 action-cell">
+            <button type="button" class="btn-primary" (click)="addFact()">Add Fact</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Topic</th>
+              <th>Verified Statement</th>
+              <th>Source / Citation</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fact of facts(); track fact.id) {
+              <tr>
+                <td><strong>{{ fact.topic }}</strong></td>
+                <td>{{ fact.verifiedClaim }}</td>
+                <td><span class="source-tag">{{ fact.sourceReference || 'Internal doc' }}</span></td>
+                <td>
+                  <button type="button" class="btn-link text-danger" (click)="deactivateFact(fact.id)">Remove</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  }
+
+  <!-- TAB 4: VERSION HISTORY -->
+  @if (activeTab() === 'history') {
+    <section class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Brand Name</th>
+            <th>Tone of Voice</th>
+            <th>Last Updated</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of history(); track h.id) {
+            <tr>
+              <td><strong>v{{ h.version }}</strong></td>
+              <td>{{ h.brandName }}</td>
+              <td>{{ h.toneOfVoice }}</td>
+              <td>{{ h.updatedAt ? (h.updatedAt | date:'medium') : (h.createdAt | date:'medium') }}</td>
+              <td>
+                <span class="badge" [class.approved]="h.active" [class.archived]="!h.active">
+                  {{ h.active ? 'Active Standard' : 'Archived' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+
+</main>

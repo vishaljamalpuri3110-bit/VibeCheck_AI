@@ -26,15 +26,34 @@ public class ComplianceController {
     private final ComplianceRuleRepository complianceRuleRepository;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final com.karasuno.backend.service.voice.BrandVoiceService brandVoiceService;
 
     public ComplianceController(ComplianceEngineService complianceEngineService,
                                 ComplianceRuleRepository complianceRuleRepository,
                                 UserRepository userRepository,
-                                AuditService auditService) {
+                                AuditService auditService,
+                                com.karasuno.backend.service.voice.BrandVoiceService brandVoiceService) {
         this.complianceEngineService = complianceEngineService;
         this.complianceRuleRepository = complianceRuleRepository;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.brandVoiceService = brandVoiceService;
+    }
+
+    /**
+     * "Write in our voice" assistance workflow.
+     * Uses past approved examples and brand guidelines to generate voice-consistent drafting suggestions.
+     */
+    @PostMapping("/voice-assist")
+    public ResponseEntity<?> writeInOurVoice(
+            @RequestBody java.util.Map<String, String> request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String prompt = request.getOrDefault("prompt", "");
+        String contentType = request.getOrDefault("contentType", "GENERAL");
+        if (prompt.isBlank()) {
+            return ResponseEntity.badRequest().body("Prompt is required.");
+        }
+        return ResponseEntity.ok(brandVoiceService.writeInOurVoice(prompt, contentType));
     }
 
     /**

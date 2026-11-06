@@ -1,9 +1,8 @@
-
 <app-navbar />
 
 <main class="workspace">
 
-  <!-- Editor -->
+  <!-- Editor Section -->
   <section class="editor-panel">
 
     <header class="workspace-heading">
@@ -15,24 +14,46 @@
         </p>
       </div>
 
-      @if (result()) {
-        <span
-          class="overall-pill"
-          [class]="'overall-pill ' + result()!.overallState.toLowerCase()"
-        >
-          <span class="pill-dot"></span>
-          {{ stateLabel(result()!.overallState) }}
-        </span>
-      }
+      <div class="header-right-actions">
+        @if (result()?.voiceScore) {
+          <div class="voice-score-badge" title="{{ result()?.voiceFeedback }}">
+            <span class="voice-num">{{ result()!.voiceScore }}%</span>
+            <span class="voice-lbl">Voice Match</span>
+          </div>
+        }
+
+        @if (result()) {
+          <span
+            class="overall-pill"
+            [class]="'overall-pill ' + result()!.overallState.toLowerCase()"
+          >
+            <span class="pill-dot"></span>
+            {{ stateLabel(result()!.overallState) }}
+          </span>
+        }
+      </div>
     </header>
 
     <div class="document-card">
 
       <div class="document-toolbar">
 
-        <div class="document-label">
-          <span class="document-icon">✎</span>
-          <span>Untitled draft</span>
+        <div class="document-meta-inputs">
+          <input
+            type="text"
+            class="draft-title-input"
+            [(ngModel)]="draftTitle"
+            placeholder="Untitled Draft"
+          />
+
+          <select class="content-type-select" [(ngModel)]="contentType">
+            <option value="GENERAL">General Copy</option>
+            <option value="SOCIAL_POST">Social Post</option>
+            <option value="AD_COPY">Ad Copy</option>
+            <option value="EMAIL">Email Marketing</option>
+            <option value="BLOG_ARTICLE">Article / Blog</option>
+            <option value="PRESS_RELEASE">Press Release</option>
+          </select>
         </div>
 
         <div class="document-actions">
@@ -44,10 +65,28 @@
           <button
             class="text-button"
             type="button"
+            (click)="showDraftsModal.set(true)"
+            title="View saved drafts"
+          >
+            ▤ My Drafts ({{ userDrafts().length }})
+          </button>
+
+          <button
+            class="text-button"
+            type="button"
+            (click)="openVoiceAssist()"
+            title="Write with AI in brand voice"
+          >
+            ✦ Voice Assist
+          </button>
+
+          <button
+            class="text-button"
+            type="button"
             [disabled]="!draft()"
             (click)="clearDraft()"
           >
-            Clear draft
+            Clear
           </button>
 
           <button
@@ -87,17 +126,37 @@
         aria-label="Marketing draft editor"
         [ngModel]="draft()"
         (ngModelChange)="onEdit($event)"
-        placeholder="Start writing your content here...
+        placeholder="Start writing your brand message here...
 
 For example:
-Introduce your product, describe its benefits, and explain what makes it valuable to your audience."
+Introduce your product, describe its benefits honestly, and explain what makes it valuable without exaggerated hype or unverified guarantees."
       ></textarea>
 
       <div class="document-footer">
 
-        <span class="writing-hint">
-          Your draft is ready for review
-        </span>
+        <div class="footer-left">
+          <button
+            type="button"
+            class="btn-save-draft"
+            [disabled]="!draft().trim() || saving()"
+            (click)="saveDraft()"
+          >
+            {{ saving() ? 'Saving...' : 'Save Draft' }}
+          </button>
+
+          <button
+            type="button"
+            class="btn-submit-review"
+            [disabled]="!draft().trim()"
+            (click)="showSubmitModal.set(true)"
+          >
+            Submit for Review →
+          </button>
+
+          @if (saveMessage()) {
+            <span class="save-status-msg">{{ saveMessage() }}</span>
+          }
+        </div>
 
         <button
           class="scan-button"
@@ -136,8 +195,48 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
     @if (result()?.piiDetected) {
       <div class="privacy-note">
         <span>🔒</span>
-        Personal information was detected and masked before analysis.
+        Personal information (PII) was detected and shielded before AI verification.
       </div>
+    }
+
+    @if (result()?.aiDisclosure) {
+      <div class="ai-disclosure-note">
+        <span>✦</span>
+        {{ result()!.aiDisclosure }}
+      </div>
+    }
+
+    <!-- THREADED REVIEW DISCUSSION PANEL -->
+    @if (submissionId() && comments().length > 0) {
+      <section class="discussion-section card">
+        <div class="discussion-header">
+          <h3>Review Discussion & Notes</h3>
+          <span class="badge-count">{{ comments().length }} messages</span>
+        </div>
+
+        <div class="comments-thread">
+          @for (c of comments(); track c.id) {
+            <div class="comment-bubble" [class.manager-comment]="c.authorRole.includes('MANAGER') || c.authorRole.includes('ADMIN')">
+              <div class="comment-meta">
+                <strong>{{ c.authorUsername }}</strong>
+                <span class="comment-role">{{ c.authorRole.includes('MANAGER') ? 'Manager' : (c.authorRole.includes('ADMIN') ? 'Admin' : 'Creator') }}</span>
+                <span class="comment-time">{{ c.createdAt | date:'short' }}</span>
+              </div>
+              <p class="comment-body">{{ c.message }}</p>
+            </div>
+          }
+        </div>
+
+        <div class="add-comment-box">
+          <input
+            type="text"
+            [(ngModel)]="newCommentText"
+            placeholder="Reply to reviewers or add creator context..."
+            (keyup.enter)="addComment()"
+          />
+          <button type="button" class="btn-comment-send" (click)="addComment()">Send</button>
+        </div>
+      </section>
     }
 
     <p class="editor-footnote">
@@ -148,7 +247,7 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
   </section>
 
 
-  <!-- Results -->
+  <!-- Results Aside Panel -->
   <aside class="results-panel">
 
     <header class="results-heading">
@@ -191,7 +290,7 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
 
         <h3>Reviewing your content</h3>
 
-        <p>Checking brand rules and verifying claims.</p>
+        <p>Checking brand rules, tone consistency, and verifying factual claims.</p>
       </div>
 
     }
@@ -218,6 +317,17 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
           </div>
 
         </div>
+
+        <!-- Voice score summary -->
+        @if (result()?.voiceScore) {
+          <div class="voice-card">
+            <div class="voice-top">
+              <span class="voice-card-label">Brand Voice Consistency</span>
+              <strong>{{ result()!.voiceScore }}%</strong>
+            </div>
+            <p class="voice-card-feedback">{{ result()?.voiceFeedback }}</p>
+          </div>
+        }
 
 
         <!-- Counts -->
@@ -332,9 +442,21 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
                   </span>
 
                   <span class="claim-main">
-                    <span class="claim-state">
-                      {{ stateLabel(item.state) }}
-                    </span>
+                    <div class="claim-tags-row">
+                      <span class="claim-state">
+                        {{ stateLabel(item.state) }}
+                      </span>
+                      @if (item.severity) {
+                        <span class="claim-severity-badge" [class]="item.severity.toLowerCase()">
+                          {{ item.severity }}
+                        </span>
+                      }
+                      @if (item.guidelineReference) {
+                        <span class="guideline-ref-badge">
+                          {{ item.guidelineReference }}
+                        </span>
+                      }
+                    </div>
 
                     <span class="claim-text">
                       {{ item.claim }}
@@ -373,7 +495,7 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
 
 
                     <!-- Evidence -->
-                    @if ((item.evidenceIds?.length ?? 0) > 0) {
+                    @if ((item.evidenceIds && item.evidenceIds.length > 0)) {
 
                       <div class="evidence-block">
 
@@ -458,41 +580,55 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
 
                             </div>
 
+                            <!-- Manual Modify Input Option -->
+                            <div class="manual-modify-box">
+                              <span class="preview-label">Modify wording (optional)</span>
+                              <input
+                                type="text"
+                                class="modify-input"
+                                [(ngModel)]="customCorrectionText"
+                                placeholder="Edit replacement text before applying..."
+                              />
+                            </div>
+
                             <div class="preview-actions">
 
-  @if (pendingCorrection()?.validationState === 'SAFE') {
+                              @if (pendingCorrection()?.validationState === 'SAFE') {
 
-    <button
-      type="button"
-      class="accept-correction-button"
-      (click)="acceptCorrection()"
-    >
-      Accept correction
-    </button>
+                                <button
+                                  type="button"
+                                  class="accept-correction-button"
+                                  (click)="acceptCorrection(false)"
+                                >
+                                  Accept original
+                                </button>
 
-  } @else {
+                              } @else {
 
-    <p class="correction-warning">
-      <strong>Manual review required</strong>
-      This suggestion has not passed independent validation.
-    </p>
+                                <p class="correction-warning">
+                                  <strong>Manual review required</strong>
+                                  This suggestion requires human validation.
+                                </p>
 
-  }
+                              }
 
-  <button
-    type="button"
-    class="cancel-correction-button"
-    (click)="cancelCorrection()"
-  >
-    Cancel
-  </button>
+                              <button
+                                type="button"
+                                class="btn-modify-apply"
+                                (click)="acceptCorrection(true)"
+                              >
+                                Apply modified
+                              </button>
 
-</div>
-@if (pendingCorrection()?.validationState === 'NEEDS_REVIEW') {
-  <p class="correction-warning">
-    This correction needs manual review before it can be used.
-  </p>
-}
+                              <button
+                                type="button"
+                                class="cancel-correction-button"
+                                (click)="cancelCorrection()"
+                              >
+                                Reject
+                              </button>
+
+                            </div>
 
                           </div>
 
@@ -553,5 +689,93 @@ Introduce your product, describe its benefits, and explain what makes it valuabl
     }
 
   </aside>
+
+  <!-- MODAL: MY DRAFTS -->
+  @if (showDraftsModal()) {
+    <div class="modal-overlay" (click)="showDraftsModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Your Saved Drafts & Submissions</h3>
+          <button type="button" class="btn-close" (click)="showDraftsModal.set(false)">✕</button>
+        </div>
+
+        <div class="drafts-list">
+          <button type="button" class="btn-new-draft" (click)="createNewDraft()">
+            + Create New Blank Draft
+          </button>
+
+          @for (d of userDrafts(); track d.id) {
+            <div class="draft-row" (click)="loadDraft(d)">
+              <div class="draft-info">
+                <strong>{{ d.title }}</strong>
+                <span class="draft-meta">{{ d.contentType }} · Updated {{ d.updatedAt | date:'short' }}</span>
+              </div>
+              <span class="status-tag" [class]="d.status.toLowerCase()">{{ d.status }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: SUBMIT FOR REVIEW -->
+  @if (showSubmitModal()) {
+    <div class="modal-overlay" (click)="showSubmitModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Submit to Manager for Review</h3>
+          <button type="button" class="btn-close" (click)="showSubmitModal.set(false)">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p>Your draft will be placed in the Manager and Admin review queue with its full compliance scan and voice consistency report.</p>
+
+          <label>Creator Note for Reviewers (optional)</label>
+          <textarea
+            rows="3"
+            [(ngModel)]="creatorNote"
+            placeholder="Add context, campaign intent, or questions for your reviewer..."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="showSubmitModal.set(false)">Cancel</button>
+          <button type="button" class="btn-submit" [disabled]="submittingForReview()" (click)="submitForReview()">
+            {{ submittingForReview() ? 'Submitting...' : 'Confirm Submission' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- MODAL: WRITE IN OUR VOICE ASSIST -->
+  @if (showVoiceAssistModal()) {
+    <div class="modal-overlay" (click)="showVoiceAssistModal.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Write in Our Brand Voice</h3>
+          <button type="button" class="btn-close" (click)="showVoiceAssistModal.set(false)">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p>Describe your message or topic. The assistant will draft copy adhering to active brand guidelines and past approved company examples.</p>
+
+          <label>Topic / Brief</label>
+          <textarea
+            rows="4"
+            [(ngModel)]="voicePrompt"
+            placeholder="e.g. Announce our new platform security milestone to existing enterprise clients without overhyping or using buzzwords."
+          ></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="showVoiceAssistModal.set(false)">Cancel</button>
+          <button type="button" class="btn-submit" [disabled]="generatingVoice() || !voicePrompt().trim()" (click)="generateVoiceCopy()">
+            {{ generatingVoice() ? 'Generating Copy...' : 'Draft in Brand Voice' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 
 </main>

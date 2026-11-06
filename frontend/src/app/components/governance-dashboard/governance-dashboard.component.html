@@ -1,0 +1,159 @@
+<app-navbar />
+
+<main class="governance-page">
+
+  <header class="page-header">
+    <div>
+      <span class="eyebrow">EXECUTIVE METRICS</span>
+      <h1>Brand Governance Insights</h1>
+      <p>Audit-grade compliance metrics derived directly from MySQL verification logs and reviewer decisions.</p>
+    </div>
+
+    <button type="button" class="btn-secondary" (click)="loadInsights()" [disabled]="loading()">
+      ↻ Refresh Metrics
+    </button>
+  </header>
+
+  @if (errorMessage()) {
+    <div class="alert alert-error">{{ errorMessage() }}</div>
+  }
+
+  @if (loading() && !insights()) {
+    <div class="loading-state">
+      <span class="spinner"></span>
+      <p>Compiling database governance metrics...</p>
+    </div>
+  }
+
+  @if (insights()) {
+    <!-- TOP STAT TILES -->
+    <section class="metrics-grid">
+      <article class="metric-card">
+        <span class="metric-label">Compliance Rate</span>
+        <strong class="metric-value accent">{{ insights()!.overallComplianceRate }}%</strong>
+        <span class="metric-sub">Across all verified drafts</span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Total Content Scans</span>
+        <strong class="metric-value">{{ insights()!.totalScans }}</strong>
+        <span class="metric-sub">Deterministic & AI checks</span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Approved Submissions</span>
+        <strong class="metric-value approved">{{ insights()!.approvedSubmissions }}</strong>
+        <span class="metric-sub">Published to production</span>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Pending Reviews</span>
+        <strong class="metric-value pending">{{ insights()!.pendingSubmissions }}</strong>
+        <span class="metric-sub">Awaiting manager sign-off</span>
+      </article>
+    </section>
+
+    <!-- TWO-COLUMN DETAIL CARDS -->
+    <div class="charts-grid">
+
+      <!-- Most Common Violations -->
+      <section class="card">
+        <div class="card-title">
+          <h2>Most Frequently Broken Guidelines</h2>
+          <span class="badge-count">{{ insights()!.topBrokenRules.length }} tracked</span>
+        </div>
+
+        @if (insights()!.topBrokenRules.length === 0) {
+          <p class="empty-note">No violations recorded in the database yet.</p>
+        } @else {
+          <div class="violation-list">
+            @for (rule of insights()!.topBrokenRules; track rule.ruleName) {
+              <div class="violation-row">
+                <div class="violation-info">
+                  <strong>{{ rule.ruleName }}</strong>
+                  <span class="severity-pill" [class]="rule.severity.toLowerCase()">{{ rule.severity }}</span>
+                </div>
+                <div class="violation-count">
+                  <strong>{{ rule.count }}</strong>
+                  <span>occurrences</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+
+      <!-- Severity Distribution -->
+      <section class="card">
+        <div class="card-title">
+          <h2>Findings by Severity Distribution</h2>
+          <span class="badge-count">Total breakdown</span>
+        </div>
+
+        <div class="severity-bars">
+          @for (item of insights()!.severityBreakdown; track item.severity) {
+            <div class="severity-stat">
+              <div class="bar-header">
+                <span class="severity-name">{{ item.severity }}</span>
+                <strong>{{ item.count }} findings</strong>
+              </div>
+              <div class="progress-track">
+                <div
+                  class="progress-fill"
+                  [class]="item.severity.toLowerCase()"
+                  [style.width.%]="item.count > 0 ? (item.count / 20 * 100 > 100 ? 100 : item.count / 20 * 100) : 5"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Creator Compliance Leaderboard -->
+      <section class="card full-width">
+        <div class="card-title">
+          <h2>Team & Creator Compliance Performance</h2>
+          <span class="badge-count">Active Contributors</span>
+        </div>
+
+        @if (insights()!.creatorLeaderboard.length === 0) {
+          <p class="empty-note">No creator submissions registered yet.</p>
+        } @else {
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Creator Account</th>
+                <th>Total Submissions</th>
+                <th>Approved Submissions</th>
+                <th>Approval Rate</th>
+                <th>Compliance Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of insights()!.creatorLeaderboard; track c.username) {
+                <tr>
+                  <td><strong>{{ c.username }}</strong></td>
+                  <td>{{ c.totalSubmissions }}</td>
+                  <td>{{ c.approvedCount }}</td>
+                  <td><strong>{{ c.complianceRate }}%</strong></td>
+                  <td>
+                    <span
+                      class="status-chip"
+                      [class.high]="c.complianceRate >= 75"
+                      [class.mid]="c.complianceRate >= 50 && c.complianceRate < 75"
+                      [class.low]="c.complianceRate < 50"
+                    >
+                      {{ c.complianceRate >= 75 ? 'High Compliance' : (c.complianceRate >= 50 ? 'Moderate' : 'Needs Review') }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </section>
+
+    </div>
+  }
+
+</main>

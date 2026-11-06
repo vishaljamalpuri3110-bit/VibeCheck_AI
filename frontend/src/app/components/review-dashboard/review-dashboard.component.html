@@ -1,4 +1,3 @@
-
 <app-navbar />
 
 <main class="review-page">
@@ -6,8 +5,8 @@
   <header class="page-header">
     <div>
       <span class="eyebrow">TEAM WORKSPACE</span>
-      <h1>Content review</h1>
-      <p>Review submissions and keep brand communication consistent.</p>
+      <h1>Content review & governance</h1>
+      <p>Review creator submissions, provide feedback, and maintain brand compliance.</p>
     </div>
 
     <div class="tabs">
@@ -17,7 +16,7 @@
         [class.active]="tab() === 'pending'"
         (click)="setTab('pending')"
       >
-        Pending
+        Pending Review
         @if (stats()?.pending; as pending) {
           <span class="tab-count">{{ pending }}</span>
         }
@@ -29,7 +28,7 @@
         [class.active]="tab() === 'all'"
         (click)="setTab('all')"
       >
-        All submissions
+        All Submissions
       </button>
     </div>
   </header>
@@ -69,14 +68,14 @@
 
       <div class="column-heading">
         <div>
-          <h2>Submissions</h2>
-          <span>{{ drafts().length }} results</span>
+          <h2>Submissions Queue</h2>
+          <span>{{ submissions().length }} items</span>
         </div>
       </div>
 
       @if (loading()) {
-        <div class="list-state">Loading submissions...</div>
-      } @else if (drafts().length === 0) {
+        <div class="list-state">Loading submissions from database...</div>
+      } @else if (submissions().length === 0) {
         <div class="list-state">
           <span class="empty-icon">—</span>
           <h3>All caught up</h3>
@@ -84,39 +83,43 @@
         </div>
       } @else {
         <div class="submission-list">
-          @for (draft of drafts(); track draft.id) {
+          @for (sub of submissions(); track sub.id) {
             <button
               type="button"
               class="submission-card"
-              [class.selected]="selected()?.id === draft.id"
-              (click)="select(draft)"
+              [class.selected]="selected()?.id === sub.id"
+              (click)="select(sub)"
             >
               <div class="submission-top">
-                <span class="draft-number">Draft #{{ draft.id }}</span>
+                <span class="draft-number">#{{ sub.id }} · {{ sub.title }}</span>
                 <span
                   class="status"
-                  [class]="'status ' + draft.reviewStatus.toLowerCase()"
+                  [class]="'status ' + sub.status.toLowerCase()"
                 >
-                  {{ statusLbl(draft.reviewStatus) }}
+                  {{ statusLbl(sub.status) }}
                 </span>
               </div>
 
               <p class="submission-preview">
-                {{ draft.originalDraftText.slice(0, 110) }}
-                @if (draft.originalDraftText.length > 110) {
+                {{ sub.content.slice(0, 110) }}
+                @if (sub.content.length > 110) {
                   ...
                 }
               </p>
 
               <div class="submission-meta">
-                <span>{{ draft.submittedByUsername }}</span>
-                <span>{{ fmtDate(draft.submittedAt) }}</span>
+                <span>By <strong>{{ sub.creatorUsername }}</strong></span>
+                <span>{{ fmtDate(sub.submittedAt || sub.updatedAt) }}</span>
               </div>
 
               <div class="mini-counts">
-                <span class="green">{{ draft.supportedCount }} supported</span>
-                <span class="red">{{ draft.contradictedCount }} issues</span>
-                <span class="amber">{{ draft.unverifiedCount }} unverified</span>
+                <span class="format-badge">{{ sub.contentType }}</span>
+                @if (sub.voiceScore) {
+                  <span class="voice-mini">{{ sub.voiceScore }}% Voice</span>
+                }
+                @if (sub.commentCount > 0) {
+                  <span class="comment-mini">💬 {{ sub.commentCount }}</span>
+                }
               </div>
             </button>
           }
@@ -131,7 +134,7 @@
         <div class="detail-empty">
           <span class="empty-icon">↖</span>
           <h2>Choose a submission</h2>
-          <p>Select a draft to read its content and make a review decision.</p>
+          <p>Select a creator's draft to inspect their claims, voice match, and make an approval decision.</p>
         </div>
       } @else {
         <div class="detail-content">
@@ -139,65 +142,93 @@
           <header class="detail-header">
             <div>
               <span class="eyebrow">SUBMISSION DETAILS</span>
-              <h2>Draft #{{ selected()!.id }}</h2>
+              <h2>{{ selected()!.title }}</h2>
               <p>
-                Submitted by <strong>{{ selected()!.submittedByUsername }}</strong>
-                · {{ fmtDate(selected()!.submittedAt) }}
+                Submitted by <strong>{{ selected()!.creatorUsername }}</strong>
+                · {{ fmtDate(selected()!.submittedAt || selected()!.updatedAt) }}
+                · <span class="format-tag">{{ selected()!.contentType }}</span>
               </p>
             </div>
 
             <span
               class="status large-status"
-              [class]="'status ' + selected()!.reviewStatus.toLowerCase()"
+              [class]="'status ' + selected()!.status.toLowerCase()"
             >
-              {{ statusLbl(selected()!.reviewStatus) }}
+              {{ statusLbl(selected()!.status) }}
             </span>
           </header>
 
-          <section class="compliance-summary">
-            <div>
-              <strong>{{ selected()!.supportedCount }}</strong>
-              <span>Supported</span>
-            </div>
-            <div>
-              <strong>{{ selected()!.contradictedCount }}</strong>
-              <span>Contradicted</span>
-            </div>
-            <div>
-              <strong>{{ selected()!.unverifiedCount }}</strong>
-              <span>Unverified</span>
-            </div>
-            <div>
-              <strong>{{ selected()!.localViolationCount }}</strong>
-              <span>Rule alerts</span>
-            </div>
-          </section>
+          @if (selected()!.voiceScore) {
+            <section class="voice-detail-banner">
+              <div class="voice-score-pill">
+                <strong>{{ selected()!.voiceScore }}%</strong>
+                <span>Brand Voice Consistency</span>
+              </div>
+              <p>{{ selected()!.voiceFeedback || 'Content evaluated against company brand tone guidelines.' }}</p>
+            </section>
+          }
 
           <section class="draft-section">
             <div class="section-title">
-              <h3>Submitted content</h3>
-              <span>Original draft</span>
+              <h3>Content Body</h3>
+              <span>Original Creator Draft</span>
             </div>
 
             <div class="draft-content">
-              {{ selected()!.originalDraftText }}
+              {{ selected()!.content }}
             </div>
           </section>
 
-          @if (selected()!.reviewStatus === 'PENDING_REVIEW') {
+          <!-- THREADED MESSAGES / CREATOR NOTES -->
+          <section class="discussion-section">
+            <div class="section-title">
+              <h3>Review Discussion & Creator Notes</h3>
+              <span>{{ comments().length }} messages</span>
+            </div>
+
+            @if (comments().length === 0) {
+              <p class="empty-thread-note">No messages yet. Send a note to the creator below.</p>
+            } @else {
+              <div class="comments-thread">
+                @for (c of comments(); track c.id) {
+                  <div class="comment-bubble" [class.manager-comment]="c.authorRole.includes('MANAGER') || c.authorRole.includes('ADMIN')">
+                    <div class="comment-meta">
+                      <strong>{{ c.authorUsername }}</strong>
+                      <span class="comment-role">{{ c.authorRole.includes('MANAGER') ? 'Manager' : (c.authorRole.includes('ADMIN') ? 'Admin' : 'Creator') }}</span>
+                      <span class="comment-time">{{ c.createdAt | date:'short' }}</span>
+                    </div>
+                    <p class="comment-body">{{ c.message }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="reply-box">
+              <input
+                type="text"
+                [(ngModel)]="newReplyMessage"
+                placeholder="Reply directly to creator or other reviewers..."
+                (keyup.enter)="sendComment()"
+              />
+              <button type="button" class="btn-reply-send" (click)="sendComment()">Send</button>
+            </div>
+          </section>
+
+          <!-- REVIEW ACTIONS -->
+          @if (selected()!.status === 'IN_REVIEW' || selected()!.status === 'DRAFT') {
             <section class="decision-section">
               <div class="section-title">
-                <h3>Review decision</h3>
+                <h3>Review Decision</h3>
                 <span>Choose an outcome</span>
               </div>
 
-              <label for="manager-feedback">Feedback for creator</label>
+              <label for="manager-feedback">Feedback for {{ selected()!.creatorUsername }}</label>
 
               <textarea
                 id="manager-feedback"
-                rows="4"
+                rows="3"
                 [(ngModel)]="managerComments"
-                placeholder="Share what works or what needs improvement..."
+                placeholder="Share guidance, required changes, or approval comments..."
               ></textarea>
 
               @if (validationMessage()) {
@@ -220,7 +251,7 @@
                   [disabled]="submitting()"
                   (click)="decide('NEEDS_REVISION')"
                 >
-                  Request changes
+                  Request Changes
                 </button>
 
                 <button
@@ -236,26 +267,26 @@
           } @else {
             <section class="outcome-section">
               <div class="section-title">
-                <h3>Review outcome</h3>
+                <h3>Final Decision Outcome</h3>
               </div>
 
               <span
                 class="status large-status"
-                [class]="'status ' + selected()!.reviewStatus.toLowerCase()"
+                [class]="'status ' + selected()!.status.toLowerCase()"
               >
-                {{ statusLbl(selected()!.reviewStatus) }}
+                {{ statusLbl(selected()!.status) }}
               </span>
 
               @if (selected()!.managerComments) {
                 <div class="manager-feedback">
-                  <span>MANAGER FEEDBACK</span>
+                  <span>REVIEWER FEEDBACK</span>
                   <p>{{ selected()!.managerComments }}</p>
                 </div>
               }
 
               @if (selected()!.reviewedAt) {
                 <p class="review-date">
-                  Reviewed {{ fmtDate(selected()!.reviewedAt!) }}
+                  Reviewed by <strong>{{ selected()!.reviewedByUsername || 'Reviewer' }}</strong> on {{ fmtDate(selected()!.reviewedAt!) }}
                 </p>
               }
             </section>

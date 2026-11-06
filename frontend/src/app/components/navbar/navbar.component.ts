@@ -30,6 +30,18 @@ import { AuthService } from '../../services/auth.service';
              class="nav-link">
             <span>◈</span> Review
           </a>
+
+          <a routerLink="/guidelines"
+             routerLinkActive="active"
+             class="nav-link">
+            <span>✦</span> Guidelines
+          </a>
+
+          <a routerLink="/governance"
+             routerLinkActive="active"
+             class="nav-link">
+            <span>◒</span> Governance
+          </a>
         }
 
         @if (isAdmin()) {

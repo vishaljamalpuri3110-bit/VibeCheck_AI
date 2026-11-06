@@ -66,6 +66,18 @@ public class SecurityConfig {
                 .requestMatchers("/api/review/**")
                     .hasAnyRole("MANAGER", "ADMIN")
 
+                // Submissions: all three authenticated roles (fine-grained ownership in controller)
+                .requestMatchers("/api/submissions/**")
+                    .hasAnyRole("CONTENT_CREATOR", "MANAGER", "ADMIN")
+
+                // Guidelines: read is open to all authenticated; edit restricted to Manager and Admin
+                .requestMatchers("/api/guidelines/**")
+                    .hasAnyRole("CONTENT_CREATOR", "MANAGER", "ADMIN")
+
+                // Governance Insights: Manager and Admin
+                .requestMatchers("/api/governance/**")
+                    .hasAnyRole("MANAGER", "ADMIN")
+
                 // Compliance: all three roles
                 .requestMatchers("/api/compliance/**")
                     .hasAnyRole("CONTENT_CREATOR", "MANAGER", "ADMIN")

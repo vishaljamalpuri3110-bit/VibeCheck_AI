@@ -29,6 +29,15 @@ public class ComplianceScanResponse {
     /** True if PII was detected and masked before analysis */
     private boolean piiDetected;
 
+    /** Brand Voice Consistency Score: 0 to 100 */
+    private Integer voiceScore;
+
+    /** Concise explanation of brand voice score */
+    private String voiceFeedback;
+
+    /** AI engine disclosure notice */
+    private String aiDisclosure;
+
     private LocalDateTime scannedAt;
 
     /** A single local rule violation record. */
